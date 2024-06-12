@@ -19,6 +19,7 @@ import PIL.Image
 from wordcloud import WordCloud
 import collections
 import json
+import torch
 
 app = Flask(__name__)
 
@@ -28,7 +29,7 @@ stemmer = factory.create_stemmer()
 
 # Create stopword remover
 stop_factory = StopWordRemoverFactory()
-more_stopword = ['dengan', 'ia', 'bahwa', 'oleh', 'rp', 'undang', 'pasal', 'ayat', 'bab']
+more_stopword = ['yg', 'yang', 'aku', 'gw', 'gua', 'gue']
 data = stop_factory.get_stop_words() + more_stopword
 
 # Define hyperlink pattern for removal
@@ -61,7 +62,7 @@ def analyze():
         
         if file:
             # Read the CSV file into a Pandas DataFrame
-            df = pd.read_csv(file, delimiter=";")
+            df = pd.read_csv(file, delimiter=",")
 
             # Additional stopwords
             custom_stopwords = request.form.get('custom_stopwords', '').split(',')
@@ -69,9 +70,9 @@ def analyze():
             all_stopwords = data + custom_stopword_list
 
            # Remove hyperlinks and emoticons
-            df['cleaned_text'] = df['full_text'].str.replace(hyperlink_pattern, '')  # Remove hyperlinks
-            df['cleaned_text'] = df['cleaned_text'].str.replace(emoticon_pattern, '')  # Remove emoticons
-            df['cleaned_text'] = df['cleaned_text'].str.replace(number_pattern, '') # Remove number
+            df['cleaned_text'] = df['full_text'].str.replace(hyperlink_pattern, '', regex=True)  # Remove hyperlinks
+            df['cleaned_text'] = df['cleaned_text'].str.replace(emoticon_pattern, '', regex=True)  # Remove emoticons
+            df['cleaned_text'] = df['cleaned_text'].str.replace(number_pattern, '', regex=True) # Remove number
             
             for stopword in custom_stopword_list:
                 df['cleaned_text'] = df['cleaned_text'].str.replace(stopword, '')  
@@ -134,11 +135,11 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_positive)
-            genai.configure(api_key="AIzaSyB2sQh_oHbFULJ7x2vixJWAboPpPvrCKoA")  # Replace with your API key
+            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
-                response = model.generate_content(["You are a professional Data Analyst, write the complete conclusion and actionable insight based on the wordcloud positive sentiment", img])
+                response = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img])
                 response.resolve()
                 gemini_response_pos = response.text
             except Exception as e:
@@ -159,11 +160,11 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_neutral)
-            genai.configure(api_key="AIzaSyB2sQh_oHbFULJ7x2vixJWAboPpPvrCKoA")  # Replace with your API key
+            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
-                response = model.generate_content(["You are a professional Data Analyst, write the complete conclusion and actionable insight based on the wordcloud neutral sentiment", img])
+                response = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img])
                 response.resolve()
                 gemini_response_neu = response.text
             except Exception as e:
@@ -183,11 +184,11 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_negative)
-            genai.configure(api_key="AIzaSyB2sQh_oHbFULJ7x2vixJWAboPpPvrCKoA")  # Replace with your API key
+            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
-                response = model.generate_content(["You are a professional Data Analyst, write the complete conclusion and actionable insight based on the wordcloud negative sentiment", img])
+                response = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img])
                 response.resolve()
                 gemini_response_neg = response.text
             except Exception as e:
@@ -208,11 +209,11 @@ def analyze():
             top_bigrams = dict(bigram_counts.most_common(10))
 
             # Create bar chart
-            plt.figure(figsize=(10, 7))
-            plt.bar(range(len(top_bigrams)), list(top_bigrams.values()), align='center')
-            plt.xticks(range(len(top_bigrams)), list(top_bigrams.keys()), rotation=90)
-            plt.xlabel('Bigram Words')
-            plt.ylabel('Count')
+            plt.figure(figsize=(10, 10))
+            plt.barh(range(len(top_bigrams)), list(top_bigrams.values()), align='center')  # Horizontal bar chart
+            plt.yticks(range(len(top_bigrams)), list(top_bigrams.keys()), rotation=0)  # Swapping y-axis and x-axis
+            plt.xlabel('Count')  # Changed the label to Count
+            plt.ylabel('Bigram Words')  # Changed the label to Bigram Words
             plt.title(f"Top 10 Bigram Positive Sentiment")
 
             # Save the Bigram image
@@ -225,7 +226,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(bigram_positive)
             try:
-                response1 = model.generate_content(["You are a professional Data Analyst, write the complete conclusion and actionable insight based on the bigram positive sentiment", img1])
+                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_pos1 = response1.text
             except Exception as e:
@@ -247,11 +248,11 @@ def analyze():
             top_bigrams = dict(bigram_counts.most_common(10))
 
             # Create bar chart
-            plt.figure(figsize=(10, 7))
-            plt.bar(range(len(top_bigrams)), list(top_bigrams.values()), align='center')
-            plt.xticks(range(len(top_bigrams)), list(top_bigrams.keys()), rotation=90)
-            plt.xlabel('Bigram Words')
-            plt.ylabel('Count')
+            plt.figure(figsize=(10, 10))
+            plt.barh(range(len(top_bigrams)), list(top_bigrams.values()), align='center')  # Horizontal bar chart
+            plt.yticks(range(len(top_bigrams)), list(top_bigrams.keys()), rotation=0)  # Swapping y-axis and x-axis
+            plt.xlabel('Count')  # Changed the label to Count
+            plt.ylabel('Bigram Words')  # Changed the label to Bigram Words
             plt.title(f"Top 10 Bigram Neutral Sentiment")
 
             # Save the Bigram image
@@ -264,7 +265,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(bigram_neutral)
             try:
-                response1 = model.generate_content(["You are a professional Data Analyst, write the complete conclusion and actionable insight based on the bigram neutral sentiment", img1])
+                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_neu1 = response1.text
             except Exception as e:
@@ -275,7 +276,6 @@ def analyze():
 
             
             # Bigram Negative
-            # Get bigrams
             words1 = negative_text.split()
             bigrams = list(zip(words1, words1[1:]))
 
@@ -286,11 +286,11 @@ def analyze():
             top_bigrams = dict(bigram_counts.most_common(10))
 
             # Create bar chart
-            plt.figure(figsize=(10, 7))
-            plt.bar(range(len(top_bigrams)), list(top_bigrams.values()), align='center')
-            plt.xticks(range(len(top_bigrams)), list(top_bigrams.keys()), rotation=90)
-            plt.xlabel('Bigram Words')
-            plt.ylabel('Count')
+            plt.figure(figsize=(10, 10))
+            plt.barh(range(len(top_bigrams)), list(top_bigrams.values()), align='center')  # Horizontal bar chart
+            plt.yticks(range(len(top_bigrams)), list(top_bigrams.keys()), rotation=0)  # Swapping y-axis and x-axis
+            plt.xlabel('Count')  # Changed the label to Count
+            plt.ylabel('Bigram Words')  # Changed the label to Bigram Words
             plt.title(f"Top 10 Bigram Negative Sentiment")
 
             # Save the Bigram image
@@ -303,13 +303,118 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(bigram_negative)
             try:
-                response1 = model.generate_content(["You are a professional Data Analyst, write the complete conclusion and actionable insight based on the bigram negative sentiment", img1])
+                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_neg1 = response1.text
             except Exception as e:
                 print(f"Error generating content with Gemini: {e}")
                 gemini_response_neg1 = "Error: Failed to generate content with Gemini API."
 
+
+
+            # Unigram Positive
+            words2 = positive_text.split()
+
+            # Count the occurrences of each word
+            word_counts = collections.Counter(words2)
+
+            # Get top 10 words
+            top_words = dict(word_counts.most_common(10))
+
+            # Create bar chart
+            plt.figure(figsize=(10, 10))
+            plt.barh(range(len(top_words)), list(top_words.values()), align='center')  # Horizontal bar chart
+            plt.yticks(range(len(top_words)), list(top_words.keys()), rotation=0)  # Swapping y-axis and x-axis
+            plt.xlabel('Count')  # Changed the label to Count
+            plt.ylabel('Words')  # Changed the label to Words
+            plt.title("Top 10 Unigram Positive Sentiment")
+            # Save the unigram image
+            unigram_positive = "static/unigram_positive.png"
+            # Save the entire plot as a PNG
+            plt.savefig(unigram_positive)
+            # Show the plot
+            plt.show()
+
+            # Use Google Gemini API to generate content based on the bigram image
+            img1 = PIL.Image.open(unigram_positive)
+            try:
+                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img1])
+                response1.resolve()
+                gemini_response_pos2 = response1.text
+            except Exception as e:
+                print(f"Error generating content with Gemini: {e}")
+                gemini_response_pos2 = "Error: Failed to generate content with Gemini API."
+            
+
+
+            # Unigram Neutral
+            words2 = neutral_text.split()
+
+            # Count the occurrences of each word
+            word_counts = collections.Counter(words2)
+
+            # Get top 10 words
+            top_words = dict(word_counts.most_common(10))
+
+            # Create bar chart
+            plt.figure(figsize=(10, 10))
+            plt.barh(range(len(top_words)), list(top_words.values()), align='center')  # Horizontal bar chart
+            plt.yticks(range(len(top_words)), list(top_words.keys()), rotation=0)  # Swapping y-axis and x-axis
+            plt.xlabel('Count')  # Changed the label to Count
+            plt.ylabel('Words')  # Changed the label to Words
+            plt.title("Top 10 Unigram Neutral Sentiment")
+            # Save the unigram image
+            unigram_neutral = "static/unigram_neutral.png"
+            # Save the entire plot as a PNG
+            plt.savefig(unigram_neutral)
+            # Show the plot
+            plt.show()
+
+            # Use Google Gemini API to generate content based on the bigram image
+            img1 = PIL.Image.open(unigram_neutral)
+            try:
+                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img1])
+                response1.resolve()
+                gemini_response_neu2 = response1.text
+            except Exception as e:
+                print(f"Error generating content with Gemini: {e}")
+                gemini_response_neu2 = "Error: Failed to generate content with Gemini API."
+
+
+
+
+            # Unigram Negative
+            words2 = negative_text.split()
+
+            # Count the occurrences of each word
+            word_counts = collections.Counter(words2)
+
+            # Get top 10 words
+            top_words = dict(word_counts.most_common(10))
+
+            # Create bar chart
+            plt.figure(figsize=(10, 10))
+            plt.barh(range(len(top_words)), list(top_words.values()), align='center')  # Horizontal bar chart
+            plt.yticks(range(len(top_words)), list(top_words.keys()), rotation=0)  # Swapping y-axis and x-axis
+            plt.xlabel('Count')  # Changed the label to Count
+            plt.ylabel('Words')  # Changed the label to Words
+            plt.title("Top 10 Unigram Negative Sentiment")
+            # Save the unigram image
+            unigram_negative = "static/unigram_negative.png"
+            # Save the entire plot as a PNG
+            plt.savefig(unigram_negative)
+            # Show the plot
+            plt.show()
+
+            # Use Google Gemini API to generate content based on the bigram image
+            img1 = PIL.Image.open(unigram_negative)
+            try:
+                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img1])
+                response1.resolve()
+                gemini_response_neg2 = response1.text
+            except Exception as e:
+                print(f"Error generating content with Gemini: {e}")
+                gemini_response_neg2 = "Error: Failed to generate content with Gemini API."
 
 
             # Create a dictionary to store the outputs
@@ -327,6 +432,12 @@ def analyze():
                 "Gemini BiGram Neutral": gemini_response_neu1,
                 "Bi Gram Negative": bigram_negative,
                 "Gemini BiGram Negative": gemini_response_neg1,
+                "UniGram Positive": unigram_positive,
+                "Gemini UniGram Positive": gemini_response_pos2,
+                "UniGram Neutral": unigram_neutral,
+                "Gemini UniGram Neutral": gemini_response_neu2,
+                "UniGram Negative": unigram_negative,
+                "Gemini UniGram Negative": gemini_response_neg2,
             }
 
             # Save the dictionary as a JSON file
@@ -341,10 +452,12 @@ def analyze():
                                    wordcloud_result_negative=wordcloud_negative, gemini_result_response_neg=gemini_response_neg,
                                    bigram_result_positive=bigram_positive, gemini_result_response_pos1=gemini_response_pos1,
                                    bigram_result_neutral=bigram_neutral, gemini_result_response_neu1=gemini_response_neu1,
-                                   bigram_result_negative=bigram_negative, gemini_result_response_neg1=gemini_response_neg1)
+                                   bigram_result_negative=bigram_negative, gemini_result_response_neg1=gemini_response_neg1,
+                                   unigram_result_positive=unigram_positive, gemini_result_response_pos2=gemini_response_pos2,
+                                   unigram_result_neutral=unigram_neutral, gemini_result_response_neu2=gemini_response_neu2,
+                                   unigram_result_negative=unigram_negative, gemini_result_response_neg2=gemini_response_neg2)
 if __name__ == '__main__':
     app.run(debug=True)
-
 
 
 
