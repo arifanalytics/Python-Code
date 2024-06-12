@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CSV</title>
+</head>
+<body>
+    <h2>Upload CSV File</h2>
+    <form action="/analyze" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="file">
+        <!-- Additional stopwords removal -->
+        <h2>Additional Stopwords Removal</h2>
+        <p>Enter additional stopwords separated by commas:</p>
+        <input type="text" name="custom_stopwords" id="custom_stopwords">
+        <input type="submit" value="Analyze">
+    </form>
+
+    <!-- Sentiment Distribution -->
+    {% if sentiment_plot %}
+        <h2>Sentiment Distribution</h2>
+        <img src="{{ sentiment_plot }}" alt="Sentiment Distribution">
+    {% endif %}
+
+    <!-- Sentiment Analysis Results -->
+    
+    {% if analysis_results %}
+        <h2>Sentiment Analysis Results</h2>
+        {{ analysis_results|safe }}
+    {% endif %}
+
+    <!-- WordCloud Positive -->
+    {% if wordcloud_result_positive %}
+    <h2>Wordcloud Positive Sentiment Visualization</h2>
+    <img src="{{ wordcloud_result_positive }}" alt="Wordcloud">
+    {% endif %}
+
+    {% if gemini_result_response_pos %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_pos }}</p>
+    {% endif %}
+
+    <!-- WordCloud Neutral -->
+    {% if wordcloud_result_neutral %}
+    <h2>Wordcloud Neutral Sentiment Visualization</h2>
+    <img src="{{ wordcloud_result_neutral }}" alt="Wordcloud">
+    {% endif %}
+
+    {% if gemini_result_response_neu %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_neu }}</p>
+    {% endif %}
+
+    <!-- WordCloud Negative -->
+    {% if wordcloud_result_negative %}
+    <h2>Wordcloud Negative Sentiment Visualization</h2>
+    <img src="{{ wordcloud_result_negative }}" alt="Wordcloud">
+    {% endif %}
+
+    {% if gemini_result_response_neg %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_neg }}</p>
+    {% endif %}
+
+    <!-- Bigram Positive -->
+    {% if bigram_result_positive %}
+    <h2>BiGram Positive Sentiment Visualization</h2>
+    <img src="{{ bigram_result_positive }}" alt="BiGram">
+    {% endif %}
+
+    {% if gemini_result_response_pos1 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_pos1 }}</p>
+    {% endif %}
+
+    <!-- Bigram Neutral -->
+    {% if bigram_result_neutral %}
+    <h2>BiGram Neutral Sentiment Visualization</h2>
+    <img src="{{ bigram_result_neutral }}" alt="BiGram">
+    {% endif %}
+
+    {% if gemini_result_response_neu1 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_neu1 }}</p>
+    {% endif %}
+
+    <!-- Bigram Negative -->
+    {% if bigram_result_negative %}
+    <h2>BiGram Negative Sentiment Visualization</h2>
+    <img src="{{ bigram_result_negative }}" alt="BiGram">
+    {% endif %}
+
+    {% if gemini_result_response_neg1 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_neg1 }}</p>
+    {% endif %}
+
+
+</body>
+</html>
