@@ -95,6 +95,39 @@
     <p>{{ gemini_result_response_neg1 }}</p>
     {% endif %}
 
+    <!-- Unigram Positive -->
+    {% if unigram_result_positive %}
+    <h2>UniGram Positive Sentiment Visualization</h2>
+    <img src="{{ unigram_result_positive }}" alt="UniGram">
+    {% endif %}
+
+    {% if gemini_result_response_pos2 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_pos2 }}</p>
+    {% endif %}
+
+    <!-- Unigram Neutral -->
+    {% if unigram_result_neutral %}
+    <h2>UniGram Neutral Sentiment Visualization</h2>
+    <img src="{{ unigram_result_neutral }}" alt="UniGram">
+    {% endif %}
+
+    {% if gemini_result_response_neu2 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_neu2 }}</p>
+    {% endif %}
+
+    <!-- UniGram Negative -->
+    {% if unigram_result_negative %}
+    <h2>UniGram Negative Sentiment Visualization</h2>
+    <img src="{{ unigram_result_negative }}" alt="UniGram">
+    {% endif %}
+
+    {% if gemini_result_response_neg2 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_result_response_neg2 }}</p>
+    {% endif %}
+
 
 </body>
 </html>
