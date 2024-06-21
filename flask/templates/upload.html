@@ -6,9 +6,11 @@
     <title>Upload File</title>
 </head>
 <body>
-    <h1>Upload CSV File</h1>
+    <h1>Upload CSV or Excel File</h1>
     <form action="/result" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".csv">
+        <input type="file" name="file" accept=".csv,.xlsx">
+        <p>Enter additional custom question to analyze based on the data:</p>
+        <input type="text" name="custom_question" id="custom_question">
         <button type="submit">Upload</button>
     </form>
 
@@ -21,6 +23,14 @@
     <img src="{{ url_for('send_plot', path=plot2_path) }}" alt="Plot 2">
     <p>{{ response2 }}</p>
     {% endif %}
+
+
+
+    {% if plot1_path or plot2_path or response1 or response2 %}
+        <!-- Download button for the PDF -->
+        <a href="{{ url_for('download_pdf') }}" class="btn btn-primary" download>Download Analysis Report PDF</a>
+    {% endif %}
+
 
     <h1>Multiclass Visualization</h1>
     <form action="/streamlit" method="post">
@@ -38,6 +48,19 @@
         </select><br><br>
         <button type="submit" name="process_button" value="Process">Process</button>
     </form>
+
+
+    {% if response3 or response4 %}
+    <h1>Google Gemini Response About Data</h1>
+    <h2>Plot 1</h2>
+    <img src="{{ url_for('send_plot', path=plot1_path) }}" alt="Plot 1">
+    <p>{{ response1 }}</p>
+    <h2>Plot 2</h2>
+    <img src="{{ url_for('send_plot', path=plot2_path) }}" alt="Plot 2">
+    <p>{{ response2 }}</p>
+    {% endif %}
+
+
     {% if response3 %}
     <h1>Multiclass Barplot</h1>
     <img src="{{ url_for('static', filename='multiclass_barplot.png') }}" alt="Plot 3">
@@ -49,5 +72,12 @@
     <img src="{{ url_for('static', filename='multiclass_histplot.png') }}" alt="Plot 4">
     <p>{{ response4 }}</p>
     {% endif %}
+
+
+    {% if plot3_path or plot4_path or response3 or response4 %}
+        <!-- Download button for the PDF -->
+        <a href="{{ url_for('download_pdf2') }}" class="btn btn-primary" download>Download Analysis Report PDF Compplete</a>
+    {% endif %}
+
 </body>
 </html>
