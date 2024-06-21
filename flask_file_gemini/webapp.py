@@ -10,7 +10,7 @@ from langchain.chains.llm import LLMChain
 from langchain.prompts import PromptTemplate
 import json
 from langchain.vectorstores import FAISS
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import os
 
 
@@ -106,7 +106,7 @@ def ask_question():
 
         docs = loader.load()
         text = "\n".join([doc.page_content for doc in docs])
-        os.environ["OPENAI_API_KEY"] = "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"
+        os.environ["GOOGLE_API_KEY"] = "AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc"
 
         # Define the Summarize Chain for the question
         template1 = f"{question}\nWrite a concise summary of the following:\n{text}\nCONCISE SUMMARY:"
@@ -120,7 +120,7 @@ def ask_question():
         summary1 = response1["text"]
 
         # Generate embeddings for the summary
-        embeddings = OpenAIEmbeddings()
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         summary_embedding = embeddings.embed_query(summary1)
         document_search = FAISS.from_texts([summary1], embeddings)
 
