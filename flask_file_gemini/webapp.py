@@ -9,7 +9,10 @@ from langchain.chains import StuffDocumentsChain
 from langchain.chains.llm import LLMChain
 from langchain.prompts import PromptTemplate
 import json
+from langchain.vectorstores import FAISS
+from langchain.embeddings.openai import OpenAIEmbeddings
 import os
+
 
 app = Flask(__name__)
 
@@ -83,7 +86,6 @@ def analyze_document():
 def ask_question():
     global uploaded_file_path, question_responses
 
-
     if uploaded_file_path:
         question = request.form["question"]
 
@@ -96,30 +98,46 @@ def ask_question():
         elif file_extension == ".xlsx":
             loader = UnstructuredExcelLoader(uploaded_file_path, mode="elements")
         elif file_extension == ".docx":
-            loader = loader = Docx2txtLoader(uploaded_file_path)
+            loader = Docx2txtLoader(uploaded_file_path)
         elif file_extension == ".pptx":
             loader = UnstructuredPowerPointLoader(uploaded_file_path)
         else:
             return "Unsupported file type", 400
 
         docs = loader.load()
+        text = "\n".join([doc.page_content for doc in docs])
+        os.environ["OPENAI_API_KEY"] = "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"
 
-        # Define the Summarize Chain
-        template1 = question + """Write a concise summary of the following:
-        "{text}"
-        CONCISE SUMMARY:"""
-
+        # Define the Summarize Chain for the question
+        template1 = f"{question}\nWrite a concise summary of the following:\n{text}\nCONCISE SUMMARY:"
         prompt1 = PromptTemplate.from_template(template1)
 
+        # Initialize the LLMChain with the prompt
         llm_chain1 = LLMChain(llm=llm, prompt=prompt1)
-        stuff_chain1 = StuffDocumentsChain(llm_chain=llm_chain1, document_variable_name="text")
+
+        # Invoke the chain with the entire document text to get the summary
+        response1 = llm_chain1.invoke({"text": text})
+        summary1 = response1["text"]
+
+        # Generate embeddings for the summary
+        embeddings = OpenAIEmbeddings()
+        summary_embedding = embeddings.embed_query(summary1)
+        document_search = FAISS.from_texts([summary1], embeddings)
+
+        # Perform a search on the FAISS vector database if it's initialized
+        if document_search:
+            query_embedding = embeddings.embed_query(question)
+            results = document_search.similarity_search_by_vector(query_embedding, k=1)
+
+            if results:
+                current_response = results[0].page_content
+            else:
+                current_response = "No matching document found in the database."
+        else:
+            current_response = "Vector database not initialized."
 
         # Format the question and response
         current_question = f"You asked: {question}"
-        response1 = stuff_chain1.invoke(docs)
-        current_response = response1["output_text"]
-
-        # Store the current question and response
         question_responses.append((current_question, current_response))
 
         # Save all results to output.json
