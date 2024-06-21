@@ -13,6 +13,7 @@ import PIL.Image
 from werkzeug.utils import secure_filename
 import os
 import json
+from fpdf import FPDF
 
 app = Flask(__name__)
 
@@ -44,6 +45,32 @@ def clean_data(df):
             df[col] = df[col].str.lower()
 
     return df
+
+
+def clean_data2(df):
+    for col in df.columns:
+        if 'value' in col or 'price' in col or 'cost' in col or 'amount' in col or 'Value' in col or 'Price' in col or 'Cost' in col or 'Amount' in col:
+            if df[col].dtype == 'object':
+                df[col] = df[col].str.replace('$', '')
+                df[col] = df[col].str.replace('£', '')
+                df[col] = df[col].str.replace('€', '')
+                df[col] = df[col].replace('[^\d.-]', '', regex=True).astype(float)
+
+    null_percentage = df.isnull().sum() / len(df)
+
+    for col in df.columns:
+        if df[col].isnull().sum() > 0:
+            if null_percentage[col] <= 0.25:
+                if df[col].dtype in ['float64', 'int64']:
+                    median_value = df[col].median()
+                    df[col].fillna(median_value, inplace=True)
+
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].str.lower()
+
+    return df
+
 
 
 def generate_plot(df, plot_path, plot_type):
@@ -119,10 +146,12 @@ def generate_plot(df, plot_path, plot_type):
     return plot_path
 
 def generate_gemini_response(plot_path):
+    global question
+    question = request.form["custom_question"]
     genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")
     img = Image.open(plot_path)
     model = genai.GenerativeModel('gemini-1.5-flash-latest')
-    response = model.generate_content(["As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
+    response = model.generate_content([question + "As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
     response.resolve()
     return response.text
 
@@ -132,15 +161,26 @@ def upload_file():
 
 @app.route('/result', methods=['POST'])
 def result():
-    global uploaded_df  # Declare uploaded_df as a global variable
+    global uploaded_df
+    global uploaded_filename  # Declare uploaded_df as a global variable
+    global plot1_path
+    global plot2_path
+    global response1
+    global response2
     
     uploaded_file = request.files['file']
     if uploaded_file.filename != '':
-        # Save the uploaded file as 'dataset.csv'
-        uploaded_file.save('dataset.csv')
-        # Read the uploaded file into a DataFrame
-        df = pd.read_csv('dataset.csv', encoding='utf-8')
-        columns = df.columns.tolist()  # Get list of column names
+        uploaded_filename = secure_filename(uploaded_file.filename)
+        if uploaded_filename.endswith('.csv'):
+            uploaded_file.save('dataset.csv')
+            df = pd.read_csv('dataset.csv', encoding='utf-8')
+        elif uploaded_filename.endswith('.xlsx'):
+            uploaded_file.save('dataset.xlsx')
+            df = pd.read_excel('dataset.xlsx')
+        else:
+            return "Unsupported file format" 
+        
+        columns = df.columns.tolist()
 
         # Generate Plots
         plot1_path = generate_plot(df, 'static/plot4.png', 'countplot')
@@ -165,6 +205,51 @@ def result():
         # Save the dictionary as a JSON file
         with open("output.json", "w") as outfile:
             json.dump(outputs, outfile)
+        
+
+
+
+
+
+
+        # Function to handle encoding to latin1
+        def safe_encode(text):
+            try:
+                return text.encode('latin1', errors='replace').decode('latin1')  # Replace invalid characters
+            except Exception as e:
+                return f"Error encoding text: {str(e)}"
+
+
+
+        # Generate PDF with the results
+        pdf = FPDF()
+        pdf.set_font("Arial", size=12)
+
+        # Single Countplot Barchart and response
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Countplot Barchart", ln=True, align='C')
+        pdf.image(plot1_path, x=10, y=30, w=190)
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Countplot Barchart Google Gemini Response", ln=True, align='C')
+        pdf.ln(10)
+        pdf.multi_cell(0, 10, safe_encode(response1))
+
+        # Single Histplot and response
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Histplot", ln=True, align='C')
+        pdf.image(plot2_path, x=10, y=30, w=190)
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Histplot Google Gemini Response", ln=True, align='C')
+        pdf.ln(10)
+        pdf.multi_cell(0, 10, safe_encode(response2))
+
+
+        pdf_output_path = 'static/analysis_report.pdf'
+        pdf.output(pdf_output_path)
+
+
+
+
 
         #extra = request.args.get('extra')
         #if extra:
@@ -191,9 +276,22 @@ def result():
             return "No CSV file uploaded"
 
 
+@app.route('/download_pdf')
+def download_pdf():
+    pdf_output_path = 'static/analysis_report.pdf'
+    return send_file(pdf_output_path, as_attachment=True)
+
+
+
 @app.route('/streamlit', methods=['POST'])
 def streamlit():
     global uploaded_df
+    global uploaded_filename
+    global question
+    global plot1_path
+    global plot2_path
+    global response1
+    global response2
     target_variable_html = None
     columns_for_analysis_html = None
     response3 = None
@@ -207,7 +305,10 @@ def streamlit():
         columns_for_analysis = request.form.getlist('columns_for_analysis')
         process_button = request.form.get("process_button")
 
-        df = uploaded_df.copy()
+        if uploaded_filename.endswith('.csv'):
+            df = pd.read_csv('dataset.csv', encoding='utf-8')
+        elif uploaded_filename.endswith('.xlsx'):
+            df = pd.read_excel('dataset.xlsx')
 
         # Process button
         if process_button:
@@ -219,7 +320,7 @@ def streamlit():
             df = pd.concat([target_variable_data, columns_for_analysis_data], axis=1)
 
             # Clean the data (if needed)
-            df = clean_data(df)
+            df = clean_data2(df)
 
             # Generate visualizations
 
@@ -320,8 +421,7 @@ def streamlit():
             img = PIL.Image.open("static/multiclass_barplot.png")
             model = genai.GenerativeModel('gemini-1.5-flash-latest')
             response = model.generate_content(img)
-
-            response = model.generate_content(["As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
+            response = model.generate_content([question + "As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
             response.resolve()
 
 
@@ -337,32 +437,102 @@ def streamlit():
 
             img = PIL.Image.open("static/multiclass_histplot.png")
             model = genai.GenerativeModel('gemini-1.5-flash-latest')
-            response1 = model.generate_content(img)
-
-            response1 = model.generate_content(["As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
-            response1.resolve()
+            response5 = model.generate_content(img)
+            response5 = model.generate_content([question + "As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
+            response5.resolve()
 
             # Generate Google Gemini responses
             response3 = response.text
-            response4 = response1.text
+            response4 = response5.text
 
 
         # Create a dictionary to store the outputs
         outputs = {
+            "barchart_visualization": plot1_path,
+            "gemini_response1": response1,
+            "histoplot_visualization": plot2_path,
+            "gemini_response2": response2,
             "multiBarchart_visualization": plot3_path,
-            "gemini_response": response3,
+            "gemini_response3": response3,
             "multiHistoplot_visualization": plot4_path,
-            "gemini_response1": response4
+            "gemini_response4": response4
         }
 
         # Save the dictionary as a JSON file
         with open("output1.json", "w") as outfile:
             json.dump(outputs, outfile)
 
+        
+
+
+
+
+
+
+        # Function to handle encoding to latin1
+        def safe_encode(text):
+            try:
+                return text.encode('latin1', errors='replace').decode('latin1')  # Replace invalid characters
+            except Exception as e:
+                return f"Error encoding text: {str(e)}"
+
+
+
+        # Generate PDF with the results
+        pdf = FPDF()
+        pdf.set_font("Arial", size=12)
+
+        # Single Countplot Barchart and response
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Countplot Barchart", ln=True, align='C')
+        pdf.image(plot1_path, x=10, y=30, w=190)
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Countplot Barchart Google Gemini Response", ln=True, align='C')
+        pdf.ln(10)
+        pdf.multi_cell(0, 10, safe_encode(response1))
+
+        # Single Histplot and response
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Histplot", ln=True, align='C')
+        pdf.image(plot2_path, x=10, y=30, w=190)
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Single Histplot Google Gemini Response", ln=True, align='C')
+        pdf.ln(10)
+        pdf.multi_cell(0, 10, safe_encode(response2))
+
+        # Multiclass Countplot Barchart and response
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Multiclass Countplot Barchart", ln=True, align='C')
+        pdf.image(plot3_path, x=10, y=30, w=190)
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Multiclass Countplot Barchart Google Gemini Response", ln=True, align='C')
+        pdf.ln(10)
+        pdf.multi_cell(0, 10, safe_encode(response3))
+
+        # Multiclass Histplot and response
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Multiclass Histplot", ln=True, align='C')
+        pdf.image(plot4_path, x=10, y=30, w=190)
+        pdf.add_page()
+        pdf.cell(200, 10, txt="Multiclass Histplot Google Gemini Response", ln=True, align='C')
+        pdf.ln(10)
+        pdf.multi_cell(0, 10, safe_encode(response4))
+
+
+        pdf_output_path = 'static/analysis_report_complete.pdf'
+        pdf.output(pdf_output_path)
+
+
+
+
         # Return processed data or visualizations to the Flask template
         return render_template('upload.html', 
                        target_variable=target_variable_html, 
-                       columns_for_analysis=columns_for_analysis_html, 
+                       columns_for_analysis=columns_for_analysis_html,
+                       response1=response1, 
+                       response2=response2, 
+                       plot1_path=plot1_path, 
+                       plot2_path=plot2_path, 
                        response3=response3, 
                        response4=response4,
                        plot3_path=plot3_path,
@@ -372,13 +542,17 @@ def streamlit():
         return "No CSV file uploaded"
 
 
-
-
-
     
 @app.route('/plot/<path:path>')
 def send_plot(path):
     return send_file(path)
+
+
+@app.route('/download_pdf2')
+def download_pdf2():
+    pdf_output_path2 = 'static/analysis_report_complete.pdf'
+    return send_file(pdf_output_path2, as_attachment=True)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
