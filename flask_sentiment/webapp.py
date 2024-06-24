@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect
+from flask import Flask, render_template, request, flash, redirect, send_file
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
@@ -20,6 +20,8 @@ from wordcloud import WordCloud
 import collections
 import json
 import torch
+from fpdf import FPDF
+
 
 app = Flask(__name__)
 
@@ -123,6 +125,9 @@ def analyze():
             neutral_text = ' '.join(df[df['sentiment_label'] == 'neutral']['cleaned_text'])
 
 
+            question = request.form["custom_question"]
+
+
             # Create WordCloud Positive
             wordcloud = WordCloud(
                 min_font_size=3, max_words=200, width=800, height=400,
@@ -135,11 +140,11 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_positive)
-            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")  # Replace with your API key
+            genai.configure(api_key="AIzaSyAQLXJ6ROBzMycImPVp2jTlbB3zIpEWmhM")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
-                response = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img])
+                response = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img])
                 response.resolve()
                 gemini_response_pos = response.text
             except Exception as e:
@@ -160,11 +165,11 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_neutral)
-            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")  # Replace with your API key
+            genai.configure(api_key="AIzaSyAQLXJ6ROBzMycImPVp2jTlbB3zIpEWmhM")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
-                response = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img])
+                response = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img])
                 response.resolve()
                 gemini_response_neu = response.text
             except Exception as e:
@@ -184,11 +189,11 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_negative)
-            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")  # Replace with your API key
+            genai.configure(api_key="AIzaSyAQLXJ6ROBzMycImPVp2jTlbB3zIpEWmhM")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
-                response = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img])
+                response = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to wordcloud negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img])
                 response.resolve()
                 gemini_response_neg = response.text
             except Exception as e:
@@ -226,7 +231,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(bigram_positive)
             try:
-                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img1])
+                response1 = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_pos1 = response1.text
             except Exception as e:
@@ -265,7 +270,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(bigram_neutral)
             try:
-                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img1])
+                response1 = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_neu1 = response1.text
             except Exception as e:
@@ -303,7 +308,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(bigram_negative)
             try:
-                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img1])
+                response1 = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to bigram negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_neg1 = response1.text
             except Exception as e:
@@ -338,7 +343,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(unigram_positive)
             try:
-                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img1])
+                response1 = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram positive sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the positive sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_pos2 = response1.text
             except Exception as e:
@@ -373,7 +378,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(unigram_neutral)
             try:
-                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img1])
+                response1 = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram neutral sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the neutral sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_neu2 = response1.text
             except Exception as e:
@@ -409,7 +414,7 @@ def analyze():
             # Use Google Gemini API to generate content based on the bigram image
             img1 = PIL.Image.open(unigram_negative)
             try:
-                response1 = model.generate_content(["As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img1])
+                response1 = model.generate_content([question + "As a marketing consultant, I aim to analyze consumer insights derived from the chart and the current market context. By focusing on the key findings related to unigram negative sentiment, I can formulate actionable insights. Please provide explanations in bullet points based on the negative sentiment analysis.", img1])
                 response1.resolve()
                 gemini_response_neg2 = response1.text
             except Exception as e:
@@ -446,6 +451,128 @@ def analyze():
 
 
 
+            
+
+
+
+
+
+            # Function to handle encoding to latin1
+            def safe_encode(text):
+                try:
+                    return text.encode('latin1', errors='replace').decode('latin1')  # Replace invalid characters
+                except Exception as e:
+                    return f"Error encoding text: {str(e)}"
+
+
+
+
+
+
+
+            # Generate PDF with the results
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+
+            # Title
+            pdf.cell(200, 10, txt="Sentiment Analysis Report", ln=True, align='C')
+
+            # Sentiment Distribution Plot
+            pdf.image(sentiment_plot_path, x=10, y=30, w=190)
+            pdf.ln(100)
+
+            # Positive WordCloud and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Positive WordCloud", ln=True, align='C')
+            pdf.image(wordcloud_positive, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Positive WordCloud Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_pos))
+
+            # Neutral WordCloud and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Neutral WordCloud", ln=True, align='C')
+            pdf.image(wordcloud_neutral, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Neutral WordCloud Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_neu))
+
+            # Negative WordCloud and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Negative WordCloud", ln=True, align='C')
+            pdf.image(wordcloud_negative, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Negative WordCloud Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_neg))
+
+            # Positive Bigram and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Positive Bigram Sentiment", ln=True, align='C')
+            pdf.image(bigram_positive, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Positive Bigram Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_pos1))
+
+            # Neutral Bigram and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Neutral Bigram Sentiment", ln=True, align='C')
+            pdf.image(bigram_neutral, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Neutral Bigram Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_neu1))
+
+            # Negative Bigram and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Negative Bigram Sentiment", ln=True, align='C')
+            pdf.image(bigram_negative, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Negative Bigram Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_neg1))
+
+            # Positive Unigram and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Positive Unigram Sentiment", ln=True, align='C')
+            pdf.image(unigram_positive, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Positive Unigram Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_pos2))
+
+            # Neutral Unigram and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Neutral Unigram Sentiment", ln=True, align='C')
+            pdf.image(unigram_neutral, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Neutral Unigram Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_neu2))
+
+            # Negative Unigram and response
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Negative Unigram Sentiment", ln=True, align='C')
+            pdf.image(unigram_negative, x=10, y=30, w=190)
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Negative Unigram Google Gemini Response", ln=True, align='C')
+            pdf.ln(10)
+            pdf.multi_cell(0, 10, safe_encode(gemini_response_neg2))
+
+            pdf_output_path = 'static/analysis_report.pdf'
+            pdf.output(pdf_output_path)
+
+
+
+
+
+
+
+
             return render_template('upload.html', sentiment_plot=sentiment_plot_path, analysis_results=analysis_results, 
                                    wordcloud_result_positive=wordcloud_positive, gemini_result_response_pos=gemini_response_pos,
                                    wordcloud_result_neutral=wordcloud_neutral, gemini_result_response_neu=gemini_response_neu,
@@ -456,6 +583,16 @@ def analyze():
                                    unigram_result_positive=unigram_positive, gemini_result_response_pos2=gemini_response_pos2,
                                    unigram_result_neutral=unigram_neutral, gemini_result_response_neu2=gemini_response_neu2,
                                    unigram_result_negative=unigram_negative, gemini_result_response_neg2=gemini_response_neg2)
+
+
+
+@app.route('/download_pdf')
+def download_pdf():
+    pdf_output_path = 'static/analysis_report.pdf'
+    return send_file(pdf_output_path, as_attachment=True)
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
