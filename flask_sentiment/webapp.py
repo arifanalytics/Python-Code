@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, send_file
+from flask import Flask, render_template, request, flash, redirect, send_file, url_for
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
@@ -24,6 +24,8 @@ from fpdf import FPDF
 
 
 app = Flask(__name__)
+app.secret_key = 'flask_sentiment'
+
 
 # Create stemmer
 factory = StemmerFactory()
@@ -49,35 +51,52 @@ def upload_file():
     return render_template('upload.html')
 
 
+
+@app.route('/process', methods=['POST'])
+def process_file():
+    global df
+    uploaded_file = request.files['file']
+    if uploaded_file.filename != '':
+        file_extension = os.path.splitext(uploaded_file.filename)[1]
+        if file_extension == '.csv':
+            uploaded_file.save('dataset.csv')
+            df = pd.read_csv('dataset.csv', delimiter=",")
+        elif file_extension in ['.xls', '.xlsx']:
+            uploaded_file.save('dataset.xlsx')
+            df = pd.read_excel('dataset.xlsx')
+        else:
+            return "Unsupported file format"
+
+        # Get columns of the DataFrame
+        columns = df.columns.tolist()
+
+        return render_template('upload.html', columns=columns)
+    else:
+        return "No file uploaded"
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    global df
     if request.method == 'POST':
-        # Check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
         
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        
-        if file:
-            # Read the CSV file into a Pandas DataFrame
-            df = pd.read_csv(file, delimiter=",")
 
             # Additional stopwords
+            target_variable = request.form.get('target_variable')
+            if target_variable not in df.columns:
+                return "Selected target variable does not exist in the dataset."
+
             custom_stopwords = request.form.get('custom_stopwords', '').split(',')
             custom_stopword_list = [word.strip() for word in custom_stopwords]
             all_stopwords = data + custom_stopword_list
 
-           # Remove hyperlinks and emoticons
-            df['cleaned_text'] = df['full_text'].str.replace(hyperlink_pattern, '', regex=True)  # Remove hyperlinks
-            df['cleaned_text'] = df['cleaned_text'].str.replace(emoticon_pattern, '', regex=True)  # Remove emoticons
-            df['cleaned_text'] = df['cleaned_text'].str.replace(number_pattern, '', regex=True) # Remove number
-            
-            for stopword in custom_stopword_list:
-                df['cleaned_text'] = df['cleaned_text'].str.replace(stopword, '')  
+            # Remove hyperlinks, emoticons, numbers, and stopwords
+            df[target_variable] = df[target_variable].astype(str)
+            df['cleaned_text'] = df[target_variable].str.replace(hyperlink_pattern, '', regex=True)
+            df['cleaned_text'] = df['cleaned_text'].str.replace(emoticon_pattern, '', regex=True)
+            df['cleaned_text'] = df['cleaned_text'].str.replace(number_pattern, '', regex=True)
+            for stopword in all_stopwords:
+                df['cleaned_text'] = df['cleaned_text'].apply(lambda x: ' '.join([word for word in x.split() if word.lower() != stopword]))
+  
 
             # Perform stopwords removal
             df['cleaned_text'] = df['cleaned_text'].apply(lambda x: ' '.join(
@@ -595,7 +614,6 @@ def download_pdf():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
 
 
 
