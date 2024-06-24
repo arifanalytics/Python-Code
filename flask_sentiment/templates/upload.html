@@ -13,6 +13,8 @@
         <h2>Additional Stopwords Removal</h2>
         <p>Enter additional stopwords separated by commas:</p>
         <input type="text" name="custom_stopwords" id="custom_stopwords">
+        <p>Enter additional custom question to analyze based on the data:</p>
+        <input type="text" name="custom_question" id="custom_question">
         <input type="submit" value="Analyze">
     </form>
 
@@ -23,7 +25,6 @@
     {% endif %}
 
     <!-- Sentiment Analysis Results -->
-    
     {% if analysis_results %}
         <h2>Sentiment Analysis Results</h2>
         {{ analysis_results|safe }}
@@ -31,103 +32,107 @@
 
     <!-- WordCloud Positive -->
     {% if wordcloud_result_positive %}
-    <h2>Wordcloud Positive Sentiment Visualization</h2>
-    <img src="{{ wordcloud_result_positive }}" alt="Wordcloud">
+        <h2>Wordcloud Positive Sentiment Visualization</h2>
+        <img src="{{ wordcloud_result_positive }}" alt="Wordcloud">
     {% endif %}
 
     {% if gemini_result_response_pos %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_pos }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_pos }}</p>
     {% endif %}
 
     <!-- WordCloud Neutral -->
     {% if wordcloud_result_neutral %}
-    <h2>Wordcloud Neutral Sentiment Visualization</h2>
-    <img src="{{ wordcloud_result_neutral }}" alt="Wordcloud">
+        <h2>Wordcloud Neutral Sentiment Visualization</h2>
+        <img src="{{ wordcloud_result_neutral }}" alt="Wordcloud">
     {% endif %}
 
     {% if gemini_result_response_neu %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_neu }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_neu }}</p>
     {% endif %}
 
     <!-- WordCloud Negative -->
     {% if wordcloud_result_negative %}
-    <h2>Wordcloud Negative Sentiment Visualization</h2>
-    <img src="{{ wordcloud_result_negative }}" alt="Wordcloud">
+        <h2>Wordcloud Negative Sentiment Visualization</h2>
+        <img src="{{ wordcloud_result_negative }}" alt="Wordcloud">
     {% endif %}
 
     {% if gemini_result_response_neg %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_neg }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_neg }}</p>
     {% endif %}
 
     <!-- Bigram Positive -->
     {% if bigram_result_positive %}
-    <h2>BiGram Positive Sentiment Visualization</h2>
-    <img src="{{ bigram_result_positive }}" alt="BiGram">
+        <h2>BiGram Positive Sentiment Visualization</h2>
+        <img src="{{ bigram_result_positive }}" alt="BiGram">
     {% endif %}
 
     {% if gemini_result_response_pos1 %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_pos1 }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_pos1 }}</p>
     {% endif %}
 
     <!-- Bigram Neutral -->
     {% if bigram_result_neutral %}
-    <h2>BiGram Neutral Sentiment Visualization</h2>
-    <img src="{{ bigram_result_neutral }}" alt="BiGram">
+        <h2>BiGram Neutral Sentiment Visualization</h2>
+        <img src="{{ bigram_result_neutral }}" alt="BiGram">
     {% endif %}
 
     {% if gemini_result_response_neu1 %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_neu1 }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_neu1 }}</p>
     {% endif %}
 
     <!-- Bigram Negative -->
     {% if bigram_result_negative %}
-    <h2>BiGram Negative Sentiment Visualization</h2>
-    <img src="{{ bigram_result_negative }}" alt="BiGram">
+        <h2>BiGram Negative Sentiment Visualization</h2>
+        <img src="{{ bigram_result_negative }}" alt="BiGram">
     {% endif %}
 
     {% if gemini_result_response_neg1 %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_neg1 }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_neg1 }}</p>
     {% endif %}
 
     <!-- Unigram Positive -->
     {% if unigram_result_positive %}
-    <h2>UniGram Positive Sentiment Visualization</h2>
-    <img src="{{ unigram_result_positive }}" alt="UniGram">
+        <h2>UniGram Positive Sentiment Visualization</h2>
+        <img src="{{ unigram_result_positive }}" alt="UniGram">
     {% endif %}
 
     {% if gemini_result_response_pos2 %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_pos2 }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_pos2 }}</p>
     {% endif %}
 
     <!-- Unigram Neutral -->
     {% if unigram_result_neutral %}
-    <h2>UniGram Neutral Sentiment Visualization</h2>
-    <img src="{{ unigram_result_neutral }}" alt="UniGram">
+        <h2>UniGram Neutral Sentiment Visualization</h2>
+        <img src="{{ unigram_result_neutral }}" alt="UniGram">
     {% endif %}
 
     {% if gemini_result_response_neu2 %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_neu2 }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_neu2 }}</p>
     {% endif %}
 
     <!-- UniGram Negative -->
     {% if unigram_result_negative %}
-    <h2>UniGram Negative Sentiment Visualization</h2>
-    <img src="{{ unigram_result_negative }}" alt="UniGram">
+        <h2>UniGram Negative Sentiment Visualization</h2>
+        <img src="{{ unigram_result_negative }}" alt="UniGram">
     {% endif %}
 
     {% if gemini_result_response_neg2 %}
-    <h2>Google Gemini Response</h2>
-    <p>{{ gemini_result_response_neg2 }}</p>
+        <h2>Google Gemini Response</h2>
+        <p>{{ gemini_result_response_neg2 }}</p>
     {% endif %}
 
+    {% if sentiment_plot or analysis_results or wordcloud_result_positive or wordcloud_result_neutral or wordcloud_result_negative or bigram_result_positive or bigram_result_neutral or bigram_result_negative or unigram_result_positive or unigram_result_neutral or unigram_result_negative %}
+        <!-- Download button for the PDF -->
+        <a href="{{ url_for('download_pdf') }}" class="btn btn-primary" download>Download Analysis Report PDF</a>
+    {% endif %}
 
 </body>
 </html>
