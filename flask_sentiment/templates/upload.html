@@ -37,6 +37,24 @@
     <img src="{{ sentiment_plot }}" alt="Sentiment Distribution"><br><br>
     {% endif %}
 
+    <!-- Topic Distribution -->
+    {% if topic_plot %}
+    <h2>Topic Barchart Distribution</h2>
+    <img src="{{ topic_plot }}" alt="Topic Distribution"><br><br>
+    {% endif %}
+
+    <!-- Hierarchy Topic Distribution -->
+    {% if topic_plot1 %}
+    <h2>Topic Hierarchy Distribution</h2>
+    <img src="{{ topic_plot1 }}" alt="Topic Distribution"><br><br>
+    {% endif %}
+
+    <!-- Topic Distribution -->
+    {% if topic_plot2 %}
+    <h2>Topic Distribution</h2>
+    <img src="{{ topic_plot2 }}" alt="Topic Distribution"><br><br>
+    {% endif %}
+
     <!-- Sentiment Analysis Results -->
     {% if analysis_results %}
     <h2>Sentiment Analysis Results</h2>
