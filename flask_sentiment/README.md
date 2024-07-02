@@ -10,6 +10,6 @@ pip --no-cache-dir install torch==2.3.0
 
 pip install -U bertopic
 
-# Install kaleido
+# Install kaleido :
 
 pip install plotly kaleido
