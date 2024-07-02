@@ -21,7 +21,8 @@ import collections
 import json
 import torch
 from fpdf import FPDF
-
+from bertopic import BERTopic
+import kaleido
 
 app = Flask(__name__)
 app.secret_key = 'flask_sentiment'
@@ -135,6 +136,24 @@ def analyze():
             sentiment_plot_path = 'static/sentiment_distribution.png'
             plt.savefig(sentiment_plot_path)  # Save the plot
 
+
+            model = BERTopic(verbose=True)
+            model.fit(df['cleaned_text'])
+            topics, probabilities = model.transform(df['cleaned_text'])
+            fig = model.visualize_barchart()
+            fig.write_image('static/barchart.png')
+            topic_plot_path = 'static/barchart.png'
+
+            fig1 = model.visualize_hierarchy()
+            fig1.write_image('static/hierarchy.png')
+            topic_plot_path1 = 'static/hierarchy.png'
+
+            topic_distr, _ = model.approximate_distribution(df['cleaned_text'], min_similarity=0)
+            fig2 = model.visualize_distribution(topic_distr[0])
+            fig2.write_image('static/dist.png')
+            topic_plot_path2 = 'static/dist.png'
+            
+
             # Generate sentiment analysis results table
             analysis_results = df.to_html(classes='data')
 
@@ -159,7 +178,7 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_positive)
-            genai.configure(api_key="AIzaSyAQLXJ6ROBzMycImPVp2jTlbB3zIpEWmhM")  # Replace with your API key
+            genai.configure(api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
@@ -184,7 +203,7 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_neutral)
-            genai.configure(api_key="AIzaSyAQLXJ6ROBzMycImPVp2jTlbB3zIpEWmhM")  # Replace with your API key
+            genai.configure(api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
@@ -208,7 +227,7 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_negative)
-            genai.configure(api_key="AIzaSyAQLXJ6ROBzMycImPVp2jTlbB3zIpEWmhM")  # Replace with your API key
+            genai.configure(api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
@@ -444,6 +463,9 @@ def analyze():
             # Create a dictionary to store the outputs
             outputs = {
                 "Sentiment Plot": sentiment_plot_path,
+                "Topic Barchart Plot": topic_plot_path,
+                "Topic Hierarchy Plot": topic_plot_path1,
+                "Topic Hierarchy Plot": topic_plot_path2,
                 "Wordcloud Positive": wordcloud_positive,
                 "Gemini Wordcloud Positive": gemini_response_pos,
                 "Wordcloud Neutral": wordcloud_neutral,
@@ -500,6 +522,19 @@ def analyze():
             # Sentiment Distribution Plot
             pdf.image(sentiment_plot_path, x=10, y=30, w=190)
             pdf.ln(100)
+
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Topic Modelling Barchart", ln=True, align='C')
+            pdf.image(topic_plot_path, x=10, y=30, w=190)
+
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Topic Modelling Hierarchy", ln=True, align='C')
+            pdf.image(topic_plot_path1, x=10, y=30, w=190)
+
+            pdf.add_page()
+            pdf.cell(200, 10, txt="Topic Modelling Distribution", ln=True, align='C')
+            pdf.image(topic_plot_path2, x=10, y=30, w=190)
+            
 
             # Positive WordCloud and response
             pdf.add_page()
@@ -592,7 +627,7 @@ def analyze():
 
 
 
-            return render_template('upload.html', sentiment_plot=sentiment_plot_path, analysis_results=analysis_results, 
+            return render_template('upload.html', sentiment_plot=sentiment_plot_path, topic_plot=topic_plot_path, topic_plot1=topic_plot_path1, topic_plot2=topic_plot_path2, analysis_results=analysis_results, 
                                    wordcloud_result_positive=wordcloud_positive, gemini_result_response_pos=gemini_response_pos,
                                    wordcloud_result_neutral=wordcloud_neutral, gemini_result_response_neu=gemini_response_neu,
                                    wordcloud_result_negative=wordcloud_negative, gemini_result_response_neg=gemini_response_neg,
