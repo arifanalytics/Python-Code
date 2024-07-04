@@ -8,7 +8,14 @@
 
     {% if not summary %}
     <form action="/" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
+        <p>Upload File</p>
+        <input type="file" name="file" accept=".pdf,.pptx,.csv,.xlsx,.mp3,.docx">
+        <p>Select Summary Length :</p>
+        <select name="summary_length">
+            <option value="2 sentences">Short</option>
+            <option value="5 sentences">Medium</option>
+            <option value="long">Long</option>
+        </select>
         <input type="submit" value="Analyze">
     </form>
     {% endif %}
