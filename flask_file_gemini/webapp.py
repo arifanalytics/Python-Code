@@ -11,23 +11,15 @@ from langchain.prompts import PromptTemplate
 import json
 from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_community.document_loaders.assemblyai import TranscriptFormat
+from langchain_community.document_loaders import AssemblyAIAudioTranscriptLoader
 import os
 
 
 app = Flask(__name__)
 
 # Initialize your model
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key="AIzaSyAQLXJ6ROBzMycImPVp2jTlbB3zIpEWmhM")
-
-# Define the Summarize Chain
-template = """Write a concise summary of the following:
-"{text}" and give some key findings and actionable insights based on the content
-CONCISE SUMMARY:"""
-
-prompt = PromptTemplate.from_template(template)
-
-llm_chain = LLMChain(llm=llm, prompt=prompt)
-stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")
 
 # Variable to store the uploaded file path
 uploaded_file_path = None
@@ -59,10 +51,24 @@ def analyze_document():
             loader = loader = Docx2txtLoader(uploaded_file_path)
         elif file_extension == ".pptx":
             loader = UnstructuredPowerPointLoader(uploaded_file_path)
+        elif file_extension == ".mp3":
+            loader = AssemblyAIAudioTranscriptLoader(uploaded_file_path, api_key="4a6872879ac94da7aee6dd7504f90277")
         else:
             return "Unsupported file type", 400
 
         docs = loader.load()
+
+        summary_length = request.form["summary_length"]
+        sum = f"Write a {summary_length} concise summary of the following text."
+        # Define the Summarize Chain
+        template = sum + """Explain it in simple and clear terms. Provide key findings and actionable insights based on the content:
+                    "{text}" 
+                    CONCISE SUMMARY:"""
+
+        prompt = PromptTemplate.from_template(template)
+
+        llm_chain = LLMChain(llm=llm, prompt=prompt)
+        stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
 
         # Invoke the chain to analyze the document
         response = stuff_chain.invoke(docs)
@@ -94,22 +100,26 @@ def ask_question():
         if file_extension == ".pdf":
             loader = PyPDFLoader(uploaded_file_path)
         elif file_extension == ".csv":
-            loader = UnstructuredCSVLoader(uploaded_file_path, mode="elements", encoding="utf8")
+            loader = UnstructuredCSVLoader(uploaded_file_path, mode="elements")
         elif file_extension == ".xlsx":
             loader = UnstructuredExcelLoader(uploaded_file_path, mode="elements")
         elif file_extension == ".docx":
             loader = Docx2txtLoader(uploaded_file_path)
         elif file_extension == ".pptx":
             loader = UnstructuredPowerPointLoader(uploaded_file_path)
+        elif file_extension == ".mp3":
+            loader = AssemblyAIAudioTranscriptLoader(uploaded_file_path, api_key="4a6872879ac94da7aee6dd7504f90277")
         else:
             return "Unsupported file type", 400
 
         docs = loader.load()
         text = "\n".join([doc.page_content for doc in docs])
-        os.environ["GOOGLE_API_KEY"] = "AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc"
+        os.environ["GOOGLE_API_KEY"] = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
 
         # Define the Summarize Chain for the question
-        template1 = f"{question}\nWrite a concise summary of the following:\n{text}\nCONCISE SUMMARY:"
+        template1 = question + """answer the question based on the following:
+                    "{text}" 
+                    :"""
         prompt1 = PromptTemplate.from_template(template1)
 
         # Initialize the LLMChain with the prompt
