@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders.csv_loader import UnstructuredCSVLoader
@@ -17,6 +17,7 @@ import os
 
 
 app = Flask(__name__)
+app.secret_key = "file_gemini"
 
 # Initialize your model
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")
@@ -117,9 +118,10 @@ def ask_question():
         os.environ["GOOGLE_API_KEY"] = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
 
         # Define the Summarize Chain for the question
+        latest_conversation = session.get("latest_question_response", "")
         template1 = question + """answer the question based on the following:
                     "{text}" 
-                    :"""
+                    :""" + (f" Latest conversation: {latest_conversation}" if latest_conversation else "")
         prompt1 = PromptTemplate.from_template(template1)
 
         # Initialize the LLMChain with the prompt
@@ -152,6 +154,9 @@ def ask_question():
 
         # Save all results to output.json
         save_to_json(summary, question_responses)
+
+        # Save the latest question and response to the session
+        session["latest_question_response"] = current_response
 
     return render_template("analyze.html", summary=summary, show_conversation=True, question_responses=question_responses)
 
