@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import YoutubeLoader
 from langchain_community.document_loaders import WebBaseLoader
@@ -11,6 +11,7 @@ from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 app = Flask(__name__)
+app.secret_key = "link_gemini"
 
 # Initialize your model
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")
@@ -72,7 +73,7 @@ def ask_question():
             loader = YoutubeLoader.from_youtube_url(file_link,
                                                     add_video_info=True,
                                                     language=["en", "id"],
-                                                    translation="en",)
+                                                    translation="en")
         else:
             loader = WebBaseLoader(file_link)
 
@@ -80,8 +81,9 @@ def ask_question():
         text = "\n".join([doc.page_content for doc in docs])
         os.environ["GOOGLE_API_KEY"] = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
 
-        # Define the Summarize Chain for the question
-        template1 = f"{question}\nWrite a concise summary of the following:\n{text}\nCONCISE SUMMARY:"
+        # Check if there's a latest conversation in the session
+        latest_conversation = session.get("latest_question_response", "")
+        template1 = f"{question}\nWrite a concise summary of the following:\n{text}\nCONCISE SUMMARY:" + (f" Latest conversation: {latest_conversation}" if latest_conversation else "")
         prompt1 = PromptTemplate.from_template(template1)
 
         # Initialize the LLMChain with the prompt
@@ -114,6 +116,9 @@ def ask_question():
 
         # Save all results to output.json
         save_to_json(summary, question_responses)
+
+        # Save the latest question and response to the session
+        session["latest_question_response"] = current_response
 
     return render_template("analyze.html", summary=summary, show_conversation=True, question_responses=question_responses)
 
