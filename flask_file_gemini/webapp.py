@@ -11,16 +11,16 @@ from langchain.prompts import PromptTemplate
 import json
 from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.document_loaders.assemblyai import TranscriptFormat
-from langchain_community.document_loaders import AssemblyAIAudioTranscriptLoader
+import google.generativeai as genai
 import os
-
 
 app = Flask(__name__)
 app.secret_key = "file_gemini"
 
 # Initialize your model
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")
+genai_api_key = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
+genai.configure(api_key=genai_api_key)
 
 # Variable to store the uploaded file path
 uploaded_file_path = None
@@ -33,6 +33,7 @@ question_responses = []  # Store multiple question responses
 @app.route("/", methods=["GET", "POST"])
 def analyze_document():
     global document_analyzed, summary, uploaded_file_path
+    import google.generativeai as genai
 
     if request.method == "POST":
         file = request.files["file"]
@@ -53,9 +54,14 @@ def analyze_document():
         elif file_extension == ".pptx":
             loader = UnstructuredPowerPointLoader(uploaded_file_path)
         elif file_extension == ".mp3":
-            loader = AssemblyAIAudioTranscriptLoader(uploaded_file_path, api_key="4a6872879ac94da7aee6dd7504f90277")
-        else:
-            return "Unsupported file type", 400
+            # Use Gemini API for MP3 files
+            audio_file = genai.upload_file(path=uploaded_file_path)
+            model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+            prompt = "Summarize the speech."
+            response = model.generate_content([prompt, audio_file])
+            summary = response.text
+            document_analyzed = True
+            return redirect("/")
 
         docs = loader.load()
 
@@ -109,9 +115,17 @@ def ask_question():
         elif file_extension == ".pptx":
             loader = UnstructuredPowerPointLoader(uploaded_file_path)
         elif file_extension == ".mp3":
-            loader = AssemblyAIAudioTranscriptLoader(uploaded_file_path, api_key="4a6872879ac94da7aee6dd7504f90277")
-        else:
-            return "Unsupported file type", 400
+            # Use Gemini API for MP3 files
+            audio_file = genai.upload_file(path=uploaded_file_path)
+            model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+            prompt = "Answer the question based on the speech: " + question
+            response = model.generate_content([prompt, audio_file])
+            current_response = response.text
+            current_question = f"You asked: {question}"
+            question_responses.append((current_question, current_response))
+            save_to_json(summary, question_responses)
+            session["latest_question_response"] = current_response
+            return render_template("analyze.html", summary=summary, show_conversation=True, question_responses=question_responses)
 
         docs = loader.load()
         text = "\n".join([doc.page_content for doc in docs])
