@@ -30,6 +30,29 @@ document_analyzed = False
 summary = None
 question_responses = []  # Store multiple question responses
 
+safety_settings = [
+    {
+        "category": "HARM_CATEGORY_DANGEROUS",
+        "threshold": "BLOCK_NONE",
+    },
+    {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_NONE",
+    },
+    {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_NONE",
+    },
+    {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_NONE",
+    },
+    {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_NONE",
+    },
+]
+
 @app.route("/", methods=["GET", "POST"])
 def analyze_document():
     global document_analyzed, summary, uploaded_file_path
@@ -40,6 +63,7 @@ def analyze_document():
         # Save the uploaded file
         uploaded_file_path = "uploaded_file" + os.path.splitext(file.filename)[1]
         file.save(uploaded_file_path)
+        summary_length = request.form["summary_length"]
 
         # Determine the file type and load accordingly
         file_extension = os.path.splitext(uploaded_file_path)[1].lower()
@@ -57,15 +81,24 @@ def analyze_document():
             # Use Gemini API for MP3 files
             audio_file = genai.upload_file(path=uploaded_file_path)
             model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-            prompt = "Summarize the speech."
-            response = model.generate_content([prompt, audio_file])
+            sum = f"Write a {summary_length} concise summary of the following text."
+            prompt = sum + "Explain it in simple and clear terms. Provide key findings and actionable insights based on the content"
+            response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
             summary = response.text
             document_analyzed = True
+            # Create a dictionary to store the outputs
+            outputs = {
+                "summary": summary,
+            }
+
+            # Save the dictionary as a JSON file
+            with open("output_summary.json", "w") as outfile:
+                json.dump(outputs, outfile)
             return redirect("/")
 
         docs = loader.load()
 
-        summary_length = request.form["summary_length"]
+        
         sum = f"Write a {summary_length} concise summary of the following text."
         # Define the Summarize Chain
         template = sum + """Explain it in simple and clear terms. Provide key findings and actionable insights based on the content:
@@ -81,16 +114,16 @@ def analyze_document():
         response = stuff_chain.invoke(docs)
         summary = response["output_text"]
         document_analyzed = True
+        # Create a dictionary to store the outputs
+        outputs = {
+            "summary": summary,
+        }
 
-        # Delete output.json if it exists to clear previous conversation history
-        if os.path.exists("output.json"):
-            os.remove("output.json")
-        # Redirect to the same route to clear the form data
-        return redirect("/")
+        # Save the dictionary as a JSON file
+        with open("output.json", "w") as outfile:
+            json.dump(outputs, outfile)
 
-    # Delete output.json if it exists to clear previous conversation history
-    if os.path.exists("output.json"):
-        os.remove("output.json")
+       
 
     return render_template("analyze.html", summary=summary, show_conversation=document_analyzed)
 
@@ -118,8 +151,9 @@ def ask_question():
             # Use Gemini API for MP3 files
             audio_file = genai.upload_file(path=uploaded_file_path)
             model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-            prompt = "Answer the question based on the speech: " + question
-            response = model.generate_content([prompt, audio_file])
+            latest_conversation = session.get("latest_question_response", "")
+            prompt = "Answer the question based on the speech: " + question + (f" Latest conversation: {latest_conversation}" if latest_conversation else "")
+            response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
             current_response = response.text
             current_question = f"You asked: {question}"
             question_responses.append((current_question, current_response))
