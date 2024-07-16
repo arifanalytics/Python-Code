@@ -9,12 +9,14 @@ import json
 import os
 from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+import nest_asyncio
+nest_asyncio.apply()
+import asyncio
 
 app = Flask(__name__)
 app.secret_key = "link_gemini"
 
-# Initialize your model
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")
+
 
 # Define the Summarize Chain
 template = """Write a concise summary of the following:
@@ -23,8 +25,6 @@ CONCISE SUMMARY:"""
 
 prompt = PromptTemplate.from_template(template)
 
-llm_chain = LLMChain(llm=llm, prompt=prompt)
-stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
 
 # Variable to store the uploaded file path
 file_link = None
@@ -36,9 +36,13 @@ question_responses = []  # Store multiple question responses
 
 @app.route("/", methods=["GET", "POST"])
 def analyze_document():
-    global document_analyzed, summary, file_link
+    global document_analyzed, summary, file_link, api, llm
 
     if request.method == "POST":
+        api = request.form["api_key"]
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api)
+        llm_chain = LLMChain(llm=llm, prompt=prompt)
+        stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
         file_link = request.form["file_link"]
         if "youtube.com" in file_link:
             loader = YoutubeLoader.from_youtube_url(file_link,
@@ -64,10 +68,12 @@ def analyze_document():
 
 @app.route("/ask", methods=["POST"])
 def ask_question():
-    global file_link, question_responses
+    global file_link, question_responses, api, llm
 
     if file_link:
         question = request.form["question"]
+        llm_chain = LLMChain(llm=llm, prompt=prompt)
+        stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
 
         if "youtube.com" in file_link:
             loader = YoutubeLoader.from_youtube_url(file_link,
@@ -79,7 +85,7 @@ def ask_question():
 
         docs = loader.load()
         text = "\n".join([doc.page_content for doc in docs])
-        os.environ["GOOGLE_API_KEY"] = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
+        os.environ["GOOGLE_API_KEY"] = api
 
         # Check if there's a latest conversation in the session
         latest_conversation = session.get("latest_question_response", "")
