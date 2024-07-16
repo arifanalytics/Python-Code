@@ -9,6 +9,8 @@
     {% if not summary %}
     <form action="/" method="post">
         <input type="text" name="file_link" placeholder="Enter Website link">
+        <p>Input your Google Gemini API Key</p>
+        <input type="text" name="api_key" id="api_key">
         <input type="submit" value="Analyze">
     </form>
     {% endif %}
