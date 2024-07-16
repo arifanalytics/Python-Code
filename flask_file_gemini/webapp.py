@@ -148,7 +148,6 @@ def ask_question():
         elif file_extension == ".pptx":
             loader = UnstructuredPowerPointLoader(uploaded_file_path)
         elif file_extension == ".mp3":
-            # Use Gemini API for MP3 files
             audio_file = genai.upload_file(path=uploaded_file_path)
             model = genai.GenerativeModel(model_name="gemini-1.5-flash")
             latest_conversation = session.get("latest_question_response", "")
@@ -156,9 +155,38 @@ def ask_question():
             response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
             current_response = response.text
             current_question = f"You asked: {question}"
-            question_responses.append((current_question, current_response))
-            save_to_json(summary, question_responses)
+            
+            
+            # Save the latest question and response to the session
             session["latest_question_response"] = current_response
+            
+            # Perform vector embedding and search
+            text = current_response  # Use the summary generated from the MP3 content
+            os.environ["GOOGLE_API_KEY"] = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
+            embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+            summary_embedding = embeddings.embed_query(text)
+            document_search = FAISS.from_texts([text], embeddings)
+
+            if document_search:
+                query_embedding = embeddings.embed_query(question)
+                results = document_search.similarity_search_by_vector(query_embedding, k=1)
+
+                if results:
+                    current_response = results[0].page_content
+                else:
+                    current_response = "No matching document found in the database."
+            else:
+                current_response = "Vector database not initialized."
+
+            # Append the question and response from FAISS search
+            question_responses.append((current_question, current_response))
+            
+            # Save all results including FAISS response to output.json
+            save_to_json(summary, question_responses)
+            
+            # Save the latest question and response to the session
+            session["latest_question_response"] = current_response
+
             return render_template("analyze.html", summary=summary, show_conversation=True, question_responses=question_responses)
 
         docs = loader.load()
