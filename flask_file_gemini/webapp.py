@@ -13,14 +13,14 @@ from langchain.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import google.generativeai as genai
 import os
+import nest_asyncio
+nest_asyncio.apply()
+import asyncio
 
 app = Flask(__name__)
 app.secret_key = "file_gemini"
 
 # Initialize your model
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")
-genai_api_key = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
-genai.configure(api_key=genai_api_key)
 
 # Variable to store the uploaded file path
 uploaded_file_path = None
@@ -55,10 +55,13 @@ safety_settings = [
 
 @app.route("/", methods=["GET", "POST"])
 def analyze_document():
-    global document_analyzed, summary, uploaded_file_path
+    global document_analyzed, summary, uploaded_file_path, llm, api
     import google.generativeai as genai
 
     if request.method == "POST":
+        api = request.form["api_key"]
+        genai.configure(api_key=api)
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api)
         file = request.files["file"]
         # Save the uploaded file
         uploaded_file_path = "uploaded_file" + os.path.splitext(file.filename)[1]
@@ -130,7 +133,7 @@ def analyze_document():
 
 @app.route("/ask", methods=["POST"])
 def ask_question():
-    global uploaded_file_path, question_responses
+    global uploaded_file_path, question_responses, llm, api
 
     if uploaded_file_path:
         question = request.form["question"]
@@ -162,7 +165,7 @@ def ask_question():
             
             # Perform vector embedding and search
             text = current_response  # Use the summary generated from the MP3 content
-            os.environ["GOOGLE_API_KEY"] = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
+            os.environ["GOOGLE_API_KEY"] = api
             embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
             summary_embedding = embeddings.embed_query(text)
             document_search = FAISS.from_texts([text], embeddings)
@@ -191,7 +194,7 @@ def ask_question():
 
         docs = loader.load()
         text = "\n".join([doc.page_content for doc in docs])
-        os.environ["GOOGLE_API_KEY"] = "AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA"
+        os.environ["GOOGLE_API_KEY"] = api
 
         # Define the Summarize Chain for the question
         latest_conversation = session.get("latest_question_response", "")
