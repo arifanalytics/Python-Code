@@ -23,6 +23,9 @@ import torch
 from fpdf import FPDF
 from bertopic import BERTopic
 import kaleido
+import nest_asyncio
+nest_asyncio.apply()
+import asyncio
 
 app = Flask(__name__)
 app.secret_key = 'flask_sentiment'
@@ -82,6 +85,7 @@ def analyze():
         
 
             # Additional stopwords
+            api = request.form["api_key"]
             target_variable = request.form.get('target_variable')
             if target_variable not in df.columns:
                 return "Selected target variable does not exist in the dataset."
@@ -178,7 +182,7 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_positive)
-            genai.configure(api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")  # Replace with your API key
+            genai.configure(api_key=api)  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
@@ -203,7 +207,7 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_neutral)
-            genai.configure(api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")  # Replace with your API key
+            genai.configure(api_key=api)  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
@@ -227,7 +231,7 @@ def analyze():
 
             # Use Google Gemini API to generate content based on the uploaded image
             img = PIL.Image.open(wordcloud_negative)
-            genai.configure(api_key="AIzaSyCFI6cTqFdS-mpZBfi7kxwygewtnuF7PfA")  # Replace with your API key
+            genai.configure(api_key=api)  # Replace with your API key
             model = genai.GenerativeModel('gemini-pro-vision')
 
             try:
@@ -649,7 +653,6 @@ def download_pdf():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
 
 
 
