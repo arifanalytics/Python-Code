@@ -145,15 +145,6 @@ def generate_plot(df, plot_path, plot_type):
     plt.close(fig)
     return plot_path
 
-def generate_gemini_response(plot_path):
-    global question
-    question = request.form["custom_question"]
-    genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")
-    img = Image.open(plot_path)
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
-    response = model.generate_content([question + "As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
-    response.resolve()
-    return response.text
 
 @app.route('/')
 def upload_file():
@@ -167,7 +158,9 @@ def result():
     global plot2_path
     global response1
     global response2
-    
+    global api
+
+    api = request.form["api_key"]
     uploaded_file = request.files['file']
     if uploaded_file.filename != '':
         uploaded_filename = secure_filename(uploaded_file.filename)
@@ -181,6 +174,17 @@ def result():
             return "Unsupported file format" 
         
         columns = df.columns.tolist()
+
+
+        def generate_gemini_response(plot_path):
+            global question
+            question = request.form["custom_question"]
+            genai.configure(api_key=api)
+            img = Image.open(plot_path)
+            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            response = model.generate_content([question + "As a marketing consulant, I want to understand consumer insighst based on the chart and the market context so I can use the key findings to formulate actionable insights", img])
+            response.resolve()
+            return response.text
 
         # Generate Plots
         plot1_path = generate_plot(df, 'static/plot4.png', 'countplot')
@@ -292,6 +296,7 @@ def streamlit():
     global plot2_path
     global response1
     global response2
+    global api
     target_variable_html = None
     columns_for_analysis_html = None
     response3 = None
@@ -414,7 +419,7 @@ def streamlit():
                 text = text.replace('•', '  *')
                 return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
 
-            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")
+            genai.configure(api_key=api)
 
             import PIL.Image
 
@@ -431,7 +436,7 @@ def streamlit():
                 text = text.replace('•', '  *')
                 return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
 
-            genai.configure(api_key="AIzaSyC0HGxZs1MI5Nfc_9v9C9b5b7vTSMSlITc")
+            genai.configure(api_key=api)
 
             import PIL.Image
 
