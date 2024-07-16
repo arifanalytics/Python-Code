@@ -11,6 +11,8 @@
         <input type="file" name="file" accept=".csv,.xlsx">
         <p>Enter additional custom question to analyze based on the data:</p>
         <input type="text" name="custom_question" id="custom_question">
+        <p>Input your Google Gemini API Key</p>
+        <input type="text" name="api_key" id="api_key">
         <button type="submit">Upload</button>
     </form>
 
@@ -31,7 +33,7 @@
         <a href="{{ url_for('download_pdf') }}" class="btn btn-primary" download>Download Analysis Report PDF</a>
     {% endif %}
 
-
+    {% if plot1_path or plot2_path or response1 or response2 %}
     <h1>Multiclass Visualization</h1>
     <form action="/streamlit" method="post">
         <label for="target_variable">Select target variable:</label><br>
@@ -48,6 +50,7 @@
         </select><br><br>
         <button type="submit" name="process_button" value="Process">Process</button>
     </form>
+    {% endif %}
 
 
     {% if response3 or response4 %}
