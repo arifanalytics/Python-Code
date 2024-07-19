@@ -13,3 +13,5 @@ pip install -U bertopic
 # Install kaleido :
 
 pip install plotly kaleido
+
+# UNTUK SENTIMENT ANALYSIS LEBIH BAIK BUAT VIRTUAL ENVIRONMENT SAJA, KARENA LIBRARY PYTORCH SANGAT BERMASALAH
