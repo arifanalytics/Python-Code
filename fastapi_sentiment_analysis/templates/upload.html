@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload CSV or Excel File</title>
+</head>
+<body>
+    <h2>Upload CSV or Excel File</h2>
+    <form action="/process" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="file" accept=".csv,.xlsx">
+        <input type="submit" value="Submit">
+    </form>
+
+    {% if columns %}
+    <h2>Select Column for Sentiment Analysis</h2>
+    <form action="/analyze" method="post" enctype="multipart/form-data">
+        <label for="target_variable">Select column:</label><br>
+        <select id="target_variable" name="target_variable">
+            {% for column in columns %}
+            <option value="{{ column }}">{{ column }}</option>
+            {% endfor %}
+        </select><br><br>
+        <!-- Additional stopwords removal -->
+        <h2>Additional Stopwords Removal</h2>
+        <p>Enter additional stopwords separated by commas:</p>
+        <input type="text" name="custom_stopwords" id="custom_stopwords">
+        <p>Enter additional custom question to analyze based on the data:</p>
+        <input type="text" name="custom_question" id="custom_question">
+        <p>Input your Google Gemini API Key</p>
+        <input type="text" name="api_key" id="api_key">
+        <input type="submit" value="Analyze">
+    </form>
+    {% endif %}
+
+    <!-- Sentiment Distribution -->
+    {% if sentiment_plot_path %}
+    <h2>Sentiment Distribution</h2>
+    <img src="{{ sentiment_plot_path }}" alt="Sentiment Distribution"><br><br>
+    {% endif %}
+
+    <!-- Topic Barchart Distribution -->
+    {% if topic_plot_path %}
+    <h2>Topic Barchart Distribution</h2>
+    <img src="{{ topic_plot_path }}" alt="Topic Barchart"><br><br>
+    {% endif %}
+
+    <!-- Topic Hierarchy Distribution -->
+    {% if topic_plot_path1 %}
+    <h2>Topic Hierarchy Distribution</h2>
+    <img src="{{ topic_plot_path1 }}" alt="Topic Hierarchy"><br><br>
+    {% endif %}
+
+    <!-- Topic Distribution -->
+    {% if topic_plot_path2 %}
+    <h2>Topic Distribution</h2>
+    <img src="{{ topic_plot_path2 }}" alt="Topic Distribution"><br><br>
+    {% endif %}
+
+    <!-- WordCloud Positive -->
+    {% if wordcloud_positive %}
+    <h2>Wordcloud Positive Sentiment Visualization</h2>
+    <img src="{{ wordcloud_positive }}" alt="Wordcloud Positive">
+    {% endif %}
+
+    {% if gemini_response_pos %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_pos }}</p>
+    {% endif %}
+
+    <!-- WordCloud Neutral -->
+    {% if wordcloud_neutral %}
+    <h2>Wordcloud Neutral Sentiment Visualization</h2>
+    <img src="{{ wordcloud_neutral }}" alt="Wordcloud Neutral">
+    {% endif %}
+
+    {% if gemini_response_neu %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_neu }}</p>
+    {% endif %}
+
+    <!-- WordCloud Negative -->
+    {% if wordcloud_negative %}
+    <h2>Wordcloud Negative Sentiment Visualization</h2>
+    <img src="{{ wordcloud_negative }}" alt="Wordcloud Negative">
+    {% endif %}
+
+    {% if gemini_response_neg %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_neg }}</p>
+    {% endif %}
+
+    <!-- Bigram Positive -->
+    {% if bigram_positive %}
+    <h2>BiGram Positive Sentiment Visualization</h2>
+    <img src="{{ bigram_positive }}" alt="BiGram Positive">
+    {% endif %}
+
+    {% if gemini_response_pos1 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_pos1 }}</p>
+    {% endif %}
+
+    <!-- Bigram Neutral -->
+    {% if bigram_neutral %}
+    <h2>BiGram Neutral Sentiment Visualization</h2>
+    <img src="{{ bigram_neutral }}" alt="BiGram Neutral">
+    {% endif %}
+
+    {% if gemini_response_neu1 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_neu1 }}</p>
+    {% endif %}
+
+    <!-- Bigram Negative -->
+    {% if bigram_negative %}
+    <h2>BiGram Negative Sentiment Visualization</h2>
+    <img src="{{ bigram_negative }}" alt="BiGram Negative">
+    {% endif %}
+
+    {% if gemini_response_neg1 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_neg1 }}</p>
+    {% endif %}
+
+    <!-- Unigram Positive -->
+    {% if unigram_positive %}
+    <h2>UniGram Positive Sentiment Visualization</h2>
+    <img src="{{ unigram_positive }}" alt="UniGram">
+    {% endif %}
+
+    {% if gemini_response_pos2 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_pos2 }}</p>
+    {% endif %}
+
+    <!-- Unigram Neutral -->
+    {% if unigram_neutral %}
+    <h2>UniGram Neutral Sentiment Visualization</h2>
+    <img src="{{ unigram_neutral }}" alt="UniGram">
+    {% endif %}
+
+    {% if gemini_response_neu2 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_neu2 }}</p>
+    {% endif %}
+
+    <!-- UniGram Negative -->
+    {% if unigram_negative %}
+    <h2>UniGram Negative Sentiment Visualization</h2>
+    <img src="{{ unigram_negative }}" alt="UniGram">
+    {% endif %}
+
+    {% if gemini_response_neg2 %}
+    <h2>Google Gemini Response</h2>
+    <p>{{ gemini_response_neg2 }}</p>
+    {% endif %}
+
+    <!-- Download button for the PDF -->
+    {% if sentiment_plot_path or topic_plot_path or topic_plot_path1 or topic_plot_path2 %}
+        <a href="/download_pdf" class="btn btn-primary" download>Download Analysis Report PDF</a>
+    {% endif %}
+
+
+
+
+
+    
+
+
+</body>
+</html>
