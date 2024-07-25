@@ -18,27 +18,24 @@ nest_asyncio.apply()
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Define the Summarize Chain template
-template = """Write a concise summary of the following:\n"{text}" and give some key findings and actionable insights based on the content\nCONCISE SUMMARY:"""
-prompt = PromptTemplate.from_template(template)
-
 # Global variables
 file_link_global = None
 document_analyzed = False
 summary = None
 question_responses = []
+api = None
+llm = None
 
 @app.get("/", response_class=HTMLResponse)
 async def read_main(request: Request):
     return templates.TemplateResponse("analyze.html", {"request": request, "summary": summary, "show_conversation": document_analyzed, "question_responses": question_responses})
 
 @app.post("/", response_class=HTMLResponse)
-async def analyze_document(request: Request, api_key: str = Form(...), file_link: str = Form(...)):
+async def analyze_document(request: Request, api_key: str = Form(...), file_link: str = Form(...), iam: str = Form(...), context: str = Form(...), output: str = Form(...), summary_length: str = Form(...)):
     global file_link_global, document_analyzed, summary, api, llm
     api = api_key
-
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api)
-    llm_chain = LLMChain(llm=llm, prompt=prompt)
+
 
     file_link_global = file_link
 
@@ -48,6 +45,17 @@ async def analyze_document(request: Request, api_key: str = Form(...), file_link
         loader = WebBaseLoader(file_link_global)
 
     docs = loader.load()
+
+    # Define the Summarize Chain template
+    who = f"I am an {iam}"
+    con = f"This file is about {context}"
+    out = f"Give me the answer based on this question : {output}"
+    sum = f"Write a {summary_length} concise summary of the following text."
+    # Define the Summarize Chain
+    template = who + con + out + sum + """Explain it in simple and clear terms. Provide key findings and actionable insights based on the content:
+                "{text}" 
+                CONCISE SUMMARY:"""
+    prompt = PromptTemplate.from_template(template)
 
     # Invoke the chain to analyze the document
     llm_chain = LLMChain(llm=llm, prompt=prompt)
@@ -87,7 +95,7 @@ async def ask_question(request: Request, question: str = Form(...)):
     prompt1 = PromptTemplate.from_template(template1)
 
     # Initialize the LLMChain with the prompt
-    llm_chain1 = LLMChain(llm=llm, prompt=prompt)
+    llm_chain1 = LLMChain(llm=llm, prompt=prompt1)
 
     # Invoke the chain with the entire document text to get the summary
     response1 = llm_chain1.invoke({"text": text})  # Await the async operation
