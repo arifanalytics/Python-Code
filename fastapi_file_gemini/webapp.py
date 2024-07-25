@@ -56,7 +56,7 @@ async def read_main(request: Request):
 
 # Route for analyzing documents
 @app.post("/", response_class=HTMLResponse)
-async def analyze_document(request: Request, api_key: str = Form(...), file: UploadFile = File(...), summary_length: str = Form(...)):
+async def analyze_document(request: Request, api_key: str = Form(...), iam: str = Form(...), context: str = Form(...), output: str = Form(...), file: UploadFile = File(...), summary_length: str = Form(...)):
     global uploaded_file_path, document_analyzed, summary, question_responses, api, llm
 
     # Initialize or update API key and models
@@ -85,8 +85,11 @@ async def analyze_document(request: Request, api_key: str = Form(...), file: Upl
         # Use Gemini API for MP3 files
         audio_file = genai.upload_file(path=uploaded_file_path)
         model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+        who = f"I am an {iam}"
+        con = f"This file is about {context}"
+        out = f"Give me the answer based on this question : {output}"
         sum = f"Write a {summary_length} concise summary of the following text."
-        prompt = sum + "Explain it in simple and clear terms. Provide key findings and actionable insights based on the content"
+        prompt = who + con + out + sum + "Explain it in simple and clear terms. Provide key findings and actionable insights based on the content"
         response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
         summary = response.text
         document_analyzed = True
@@ -103,9 +106,12 @@ async def analyze_document(request: Request, api_key: str = Form(...), file: Upl
 
     docs = loader.load()
 
+    who = f"I am an {iam}"
+    con = f"This file is about {context}"
+    out = f"Give me the answer based on this question : {output}"
     sum = f"Write a {summary_length} concise summary of the following text."
     # Define the Summarize Chain
-    template = sum + """Explain it in simple and clear terms. Provide key findings and actionable insights based on the content:
+    template = who + con + out + sum + """Explain it in simple and clear terms. Provide key findings and actionable insights based on the content:
                 "{text}" 
                 CONCISE SUMMARY:"""
 
