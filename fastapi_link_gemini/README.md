@@ -1,4 +1,4 @@
-# Analyzing file with Google Gemini :
+# Analyzing link with Google Gemini :
 
 1. Tools yang dipakai : Langchain (library perantara untuk membaca file), Google Gemini (untuk analisa data), FAISSDB (Vector Database yang digunakan saat sesi conversation)
 2. Variable tersembunyi : api_key (API KEY Google Gemini yang nantinya dimasukkan dalam database ARIF)
