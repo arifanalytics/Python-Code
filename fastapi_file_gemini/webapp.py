@@ -13,9 +13,10 @@ import os
 import google.generativeai as genai
 import nest_asyncio
 
-nest_asyncio.apply()
-
 app = FastAPI()
+if os.getenv("FASTAPI_ENV") == "development":
+    nest_asyncio.apply()
+
 templates = Jinja2Templates(directory="templates")
 
 # Initialize your model and other variables
