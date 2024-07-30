@@ -1,0 +1,17 @@
+fastapi
+google-generativeai
+langchain-google-genai
+langchain
+pypdf
+langchain-community
+unstructured
+openpyxl
+docx2txt
+python-magic
+python-pptx
+jinja2
+nest-asyncio
+faiss-cpu
+tiktoken
+networkx
+pandas
