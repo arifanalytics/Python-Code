@@ -1,0 +1,16 @@
+fastapi
+google-generativeai
+langchain-google-genai
+langchain
+jinja2
+nest-asyncio
+faiss-cpu
+tiktoken
+networkx
+pandas
+youtube-transcript-api
+pandas
+pydantic
+langchain-community
+beautifulsoup4
+pytube
