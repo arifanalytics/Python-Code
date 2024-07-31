@@ -13,9 +13,10 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import json
 import nest_asyncio
 
-nest_asyncio.apply()
-
 app = FastAPI()
+if os.getenv("FASTAPI_ENV") == "development":
+    nest_asyncio.apply()
+
 templates = Jinja2Templates(directory="templates")
 
 # Global variables
