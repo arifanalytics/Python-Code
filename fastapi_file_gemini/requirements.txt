@@ -15,3 +15,5 @@ faiss-cpu
 tiktoken
 networkx
 pandas
+uvicorn
+python-multipart
