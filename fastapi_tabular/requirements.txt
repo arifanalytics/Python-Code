@@ -11,4 +11,5 @@ starlette
 jinja2
 textwrap3
 ipython
-
+uvicorn
+python-multipart
