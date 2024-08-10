@@ -11,13 +11,14 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import json
 import os
 import google.generativeai as genai
+import re
 import nest_asyncio
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
 if os.getenv("FASTAPI_ENV") == "development":
     nest_asyncio.apply()
-
-templates = Jinja2Templates(directory="templates")
 
 # Initialize your model and other variables
 uploaded_file_path = None
@@ -49,6 +50,15 @@ safety_settings = [
         "threshold": "BLOCK_NONE",
     },
 ]
+
+
+def format_text(text):
+    # Replace **text** with <b>text</b>
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
+    # Replace any remaining * with <br>
+    text = text.replace('*', '<br>')
+    return text
+
 
 # Route for main page
 @app.get("/", response_class=HTMLResponse)
@@ -92,7 +102,7 @@ async def analyze_document(request: Request, api_key: str = Form(...), iam: str 
         sum = f"Write a {summary_length} concise summary of the following text."
         prompt = who + con + out + sum + "Explain it in simple and clear terms. Provide key findings and actionable insights based on the content"
         response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
-        summary = response.text
+        summary = format_text(response.text)
         document_analyzed = True
         # Create a dictionary to store the outputs
         outputs = {
@@ -123,7 +133,7 @@ async def analyze_document(request: Request, api_key: str = Form(...), iam: str 
 
     # Invoke the chain to analyze the document
     response = stuff_chain.invoke(docs)
-    summary = response["output_text"]
+    summary = format_text(response["output_text"])
     document_analyzed = True
     # Create a dictionary to store the outputs
     outputs = {
