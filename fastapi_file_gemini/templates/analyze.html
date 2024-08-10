@@ -30,7 +30,7 @@
 
     {% if summary %}
     <h3>Summary:</h3>
-    <p>{{ summary }}</p>
+    <p>{{ summary|safe }}</p>
 
     {% if show_conversation %}
     <h3>Conversation</h3>
