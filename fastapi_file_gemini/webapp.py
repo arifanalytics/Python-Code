@@ -213,7 +213,7 @@ async def ask_question(request: Request, question: str = Form(...)):
         latest_conversation = request.cookies.get("latest_question_response", "")
         template1 = question + """answer the question based on the following:
                     "{text}" 
-                    :""" + (f" Latest conversation: {latest_conversation}" if latest_conversation else "")
+                    :""" + (f" Answer the Question with only 3 sentences. Latest conversation: {latest_conversation}" if latest_conversation else "")
         prompt1 = PromptTemplate.from_template(template1)
 
         # Initialize the LLMChain with the prompt
@@ -234,7 +234,7 @@ async def ask_question(request: Request, question: str = Form(...)):
             results = document_search.similarity_search_by_vector(query_embedding, k=1)
 
             if results:
-                current_response = results[0].page_content
+                current_response = format_text(results[0].page_content)
             else:
                 current_response = "No matching document found in the database."
         else:
