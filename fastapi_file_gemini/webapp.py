@@ -1,6 +1,8 @@
 from fastapi import FastAPI, File, UploadFile, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
+from typing import List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredCSVLoader, UnstructuredExcelLoader, Docx2txtLoader, UnstructuredPowerPointLoader
 from langchain.chains import StuffDocumentsChain
@@ -29,127 +31,133 @@ api = None
 llm = None
 
 safety_settings = [
-    {
-        "category": "HARM_CATEGORY_DANGEROUS",
-        "threshold": "BLOCK_NONE",
-    },
-    {
-        "category": "HARM_CATEGORY_HARASSMENT",
-        "threshold": "BLOCK_NONE",
-    },
-    {
-        "category": "HARM_CATEGORY_HATE_SPEECH",
-        "threshold": "BLOCK_NONE",
-    },
-    {
-        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        "threshold": "BLOCK_NONE",
-    },
-    {
-        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-        "threshold": "BLOCK_NONE",
-    },
+    {"category": "HARM_CATEGORY_DANGEROUS", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
 ]
 
-
-def format_text(text):
-    # Replace **text** with <b>text</b>
+def format_text(text: str) -> str:
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
-    # Replace any remaining * with <br>
     text = text.replace('*', '<br>')
     return text
 
+# Define Pydantic models for requests and responses
+class AnalyzeDocumentRequest(BaseModel):
+    api_key: str
+    iam: str
+    context: str
+    output: str
+    summary_length: str
+
+class AnalyzeDocumentResponse(BaseModel):
+    summary: str
+    show_conversation: bool
+    question_responses: List[str]
+
+class AskQuestionRequest(BaseModel):
+    question: str
 
 # Route for main page
 @app.get("/", response_class=HTMLResponse)
 async def read_main(request: Request):
-    return templates.TemplateResponse("analyze.html", {"request": request, "summary": summary, "show_conversation": document_analyzed, "question_responses": question_responses})
+    return templates.TemplateResponse("analyze.html", {
+        "request": request,
+        "summary": summary,
+        "show_conversation": document_analyzed,
+        "question_responses": question_responses
+    })
 
 # Route for analyzing documents
-@app.post("/", response_class=HTMLResponse)
-async def analyze_document(request: Request, api_key: str = Form(...), iam: str = Form(...), context: str = Form(...), output: str = Form(...), file: UploadFile = File(...), summary_length: str = Form(...)):
+@app.post("/", response_model=AnalyzeDocumentResponse, response_class=HTMLResponse)
+async def analyze_document(
+    request: Request,
+    api_key: str = Form(...),
+    iam: str = Form(...),
+    context: str = Form(...),
+    output: str = Form(...),
+    summary_length: str = Form(...),
+    file: UploadFile = File(...)
+):
     global uploaded_file_path, document_analyzed, summary, question_responses, api, llm
+    loader = None
 
-    # Initialize or update API key and models
-    api = api_key
-    genai.configure(api_key=api)
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api)
+    try:
+        # Initialize or update API key and models
+        api = api_key
+        genai.configure(api_key=api)
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api)
 
-    # Save the uploaded file
-    uploaded_file_path = "uploaded_file" + os.path.splitext(file.filename)[1]
-    with open(uploaded_file_path, "wb") as f:
-        f.write(file.file.read())
+        # Save the uploaded file
+        uploaded_file_path = "uploaded_file" + os.path.splitext(file.filename)[1]
+        with open(uploaded_file_path, "wb") as f:
+            f.write(file.file.read())
 
-    # Determine the file type and load accordingly
-    file_extension = os.path.splitext(uploaded_file_path)[1].lower()
-    if file_extension == ".pdf":
-        loader = PyPDFLoader(uploaded_file_path)
-    elif file_extension == ".csv":
-        loader = UnstructuredCSVLoader(uploaded_file_path, mode="elements", encoding="utf8")
-    elif file_extension == ".xlsx":
-        loader = UnstructuredExcelLoader(uploaded_file_path, mode="elements")
-    elif file_extension == ".docx":
-        loader = Docx2txtLoader(uploaded_file_path)
-    elif file_extension == ".pptx":
-        loader = UnstructuredPowerPointLoader(uploaded_file_path)
-    elif file_extension == ".mp3":
-        # Use Gemini API for MP3 files
-        audio_file = genai.upload_file(path=uploaded_file_path)
-        model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-        who = f"I am an {iam}"
-        con = f"This file is about {context}"
-        out = f"Give me the answer based on this question : {output}"
-        sum = f"Write a {summary_length} concise summary of the following text."
-        prompt = who + con + out + sum + "Explain it in simple and clear terms. Provide key findings and actionable insights based on the content"
-        response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
-        summary = format_text(response.text)
+        # Determine the file type and load accordingly
+        file_extension = os.path.splitext(uploaded_file_path)[1].lower()
+        print(f"File extension: {file_extension}")  # Debugging statement
+
+        if file_extension == ".pdf":
+            loader = PyPDFLoader(uploaded_file_path)
+        elif file_extension == ".csv":
+            loader = UnstructuredCSVLoader(uploaded_file_path, mode="elements", encoding="utf8")
+        elif file_extension == ".xlsx":
+            loader = UnstructuredExcelLoader(uploaded_file_path, mode="elements")
+        elif file_extension == ".docx":
+            loader = Docx2txtLoader(uploaded_file_path)
+        elif file_extension == ".pptx":
+            loader = UnstructuredPowerPointLoader(uploaded_file_path)
+        elif file_extension == ".mp3":
+            # Process audio files differently
+            audio_file = genai.upload_file(path=uploaded_file_path)
+            model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+            prompt = f"I am an {iam}. This file is about {context}. Answer the question based on this file: {output}. Write a {summary_length} concise summary."
+            response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
+            summary = format_text(response.text)
+            document_analyzed = True
+            outputs = {"summary": summary}
+            with open("output_summary.json", "w") as outfile:
+                json.dump(outputs, outfile)
+            return templates.TemplateResponse("analyze.html", {
+                "request": request,
+                "summary": summary,
+                "show_conversation": document_analyzed,
+                "question_responses": question_responses
+            })
+
+        # If no loader is set, raise an exception
+        if loader is None:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_extension}")
+
+        docs = loader.load()
+        prompt_template = PromptTemplate.from_template(
+            f"I am an {iam}. This file is about {context}. Answer the question based on this file: {output}. Write a {summary_length} concise summary of the following text: {{text}}"
+        )
+        llm_chain = LLMChain(llm=llm, prompt=prompt_template)
+        stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
+        response = stuff_chain.invoke(docs)
+        summary = format_text(response["output_text"])
         document_analyzed = True
-        # Create a dictionary to store the outputs
-        outputs = {
-            "summary": summary,
-        }
-
-        # Save the dictionary as a JSON file
-        with open("output_summary.json", "w") as outfile:
+        outputs = {"summary": summary}
+        with open("output.json", "w") as outfile:
             json.dump(outputs, outfile)
+        return templates.TemplateResponse("analyze.html", {
+            "request": request,
+            "summary": summary,
+            "show_conversation": document_analyzed,
+            "question_responses": question_responses
+        })
 
-        return templates.TemplateResponse("analyze.html", {"request": request, "summary": summary, "show_conversation": document_analyzed, "question_responses": question_responses})
-
-    docs = loader.load()
-
-    who = f"I am an {iam}"
-    con = f"This file is about {context}"
-    out = f"Give me the answer based on this question : {output}"
-    sum = f"Write a {summary_length} concise summary of the following text."
-    # Define the Summarize Chain
-    template = who + con + out + sum + """Explain it in simple and clear terms. Provide key findings and actionable insights based on the content:
-                "{text}" 
-                CONCISE SUMMARY:"""
-
-    prompt = PromptTemplate.from_template(template)
-
-    llm_chain = LLMChain(llm=llm, prompt=prompt)
-    stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
-
-    # Invoke the chain to analyze the document
-    response = stuff_chain.invoke(docs)
-    summary = format_text(response["output_text"])
-    document_analyzed = True
-    # Create a dictionary to store the outputs
-    outputs = {
-        "summary": summary,
-    }
-
-    # Save the dictionary as a JSON file
-    with open("output.json", "w") as outfile:
-        json.dump(outputs, outfile)
-
-    return templates.TemplateResponse("analyze.html", {"request": request, "summary": summary, "show_conversation": document_analyzed, "question_responses": question_responses})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
 
 # Route for asking questions
 @app.post("/ask", response_class=HTMLResponse)
 async def ask_question(request: Request, question: str = Form(...)):
     global uploaded_file_path, question_responses, llm, api
+
+    loader = None
 
     if uploaded_file_path:
         # Determine the file type and load accordingly
@@ -204,6 +212,10 @@ async def ask_question(request: Request, question: str = Form(...)):
             response = templates.TemplateResponse("analyze.html", {"request": request, "summary": summary, "show_conversation": document_analyzed, "question_responses": question_responses})
             response.set_cookie(key="latest_question_response", value=current_response)
             return response
+        
+        # If no loader is set, raise an exception
+        if loader is None:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {file_extension}")
 
         docs = loader.load()
         text = "\n".join([doc.page_content for doc in docs])
@@ -251,15 +263,17 @@ async def ask_question(request: Request, question: str = Form(...)):
         response = templates.TemplateResponse("analyze.html", {"request": request, "summary": summary, "show_conversation": document_analyzed, "question_responses": question_responses})
         response.set_cookie(key="latest_question_response", value=current_response)
         return response
+    else:
+        raise HTTPException(status_code=400, detail="No file has been uploaded yet.")
 
-# Function to save to JSON
+
 def save_to_json(summary, question_responses):
-    output_data = {
-        'summary': summary,
-        'question_responses': question_responses
+    outputs = {
+        "summary": summary,
+        "question_responses": question_responses
     }
-    with open('output.json', 'w') as json_file:
-        json.dump(output_data, json_file)
+    with open("output_summary.json", "w") as outfile:
+        json.dump(outputs, outfile)
 
 if __name__ == "__main__":
     import uvicorn
