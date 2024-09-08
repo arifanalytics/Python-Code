@@ -41,6 +41,8 @@ class AnalyzeDocumentResponse(BaseModel):
     plot2_path: str
     response2: str
     pdf_file_path: str
+    file_path: str
+    columns: str
 
 class MulticlassRequest(BaseModel):
     api_key: str
@@ -206,6 +208,8 @@ async def result(api_key: str = Form(...),
         df = pd.read_excel(file_path)
     else:
         raise HTTPException(status_code=400, detail="Unsupported file format")
+    
+    columns = df.columns.tolist()
 
     def generate_gemini_response(plot_path):
         genai.configure(api_key=api_key)
@@ -265,7 +269,9 @@ async def result(api_key: str = Form(...),
             response1=response1,
             plot2_path=plot2_path,
             response2=response2,
-            pdf_file_path=pdf_file_path
+            pdf_file_path=pdf_file_path,
+            file_path= file_path,
+             columns=", ".join(columns)
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
