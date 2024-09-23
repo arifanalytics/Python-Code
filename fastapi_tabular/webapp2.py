@@ -21,6 +21,23 @@ from pydantic import BaseModel
 from typing import List
 from IPython.display import display, Markdown
 import textwrap
+from langchain.chains import StuffDocumentsChain
+from langchain.chains.llm import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain.vectorstores import FAISS
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.document_loaders import PyPDFLoader, UnstructuredCSVLoader, UnstructuredExcelLoader, Docx2txtLoader, UnstructuredPowerPointLoader
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+
+safety_settings = [
+    {"category": "HARM_CATEGORY_DANGEROUS", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+]
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -28,6 +45,7 @@ templates = Jinja2Templates(directory="templates")
 
 sns.set_theme(color_codes=True)
 uploaded_df = None
+question_responses = []
 
 # Define Pydantic models for requests and responses
 class AnalyzeDocumentRequest(BaseModel):
@@ -57,6 +75,15 @@ class MulticlassResponse(BaseModel):
     plot4_path: str
     response4: str
     pdf_file_path: str
+
+class AskRequest(BaseModel):
+    question: str
+    api_key: str
+
+class AskResponse(BaseModel):
+    meta: dict
+    question: str
+    result: str
 
 def format_text(text):
     # Replace **text** with <b>text</b>
@@ -287,6 +314,8 @@ async def multiclass(
     file: UploadFile = File(...),
     columns_for_analysis: str = Form(...),  # Changed to str to handle CSV string input
 ):
+    global document_analyzed
+
     try:
         # Read the file content into a DataFrame
         if file.filename.endswith('.csv'):
@@ -408,6 +437,8 @@ async def multiclass(
         img_histplot = Image.open(plot4_path)
         response4 = model.generate_content([custom_question, img_histplot]).text
 
+        document_analyzed = True
+
         # Create a dictionary to store the outputs
         outputs = {
             "multiBarchart_visualization": plot3_path,
@@ -464,6 +495,125 @@ async def multiclass(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# Route for answering questions
+@app.post("/ask", response_model=AskResponse)
+async def ask_question(
+    request: Request,
+    api_key: str = Form(...),
+    question: str = Form(...),
+    file: UploadFile = File(...)
+):
+    global uploaded_file_path, document_analyzed, summary, api, llm
+    
+    loader = None
+
+    try:
+
+        # Initialize the LLM model
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key)
+
+        uploaded_file_path = "uploaded_file" + os.path.splitext(file.filename)[1]
+        with open(uploaded_file_path, "wb") as f:
+            f.write(file.file.read())
+        # Determine the file extension and select the appropriate loader
+        loader = None
+        file_extension = os.path.splitext(uploaded_file_path)[1].lower()
+
+        if file_extension == ".csv":
+            loader = UnstructuredCSVLoader(uploaded_file_path, mode="elements")
+        elif file_extension == ".xlsx":
+            loader = UnstructuredExcelLoader(uploaded_file_path, mode="elements")
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file format")
+
+        # Load and process the document
+        try:
+            docs = loader.load()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error loading document: {str(e)}")
+
+        # Combine document text
+        text = "\n".join([doc.page_content for doc in docs])
+        os.environ["GOOGLE_API_KEY"] = api_key
+
+        # Initialize embeddings and create FAISS vector store
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        chunks = text_splitter.split_text(text)
+        document_search = FAISS.from_texts(chunks, embeddings)
+
+        # Generate query embedding and perform similarity search
+        query_embedding = embeddings.embed_query(question)
+        results = document_search.similarity_search_by_vector(query_embedding, k=3)
+
+        if results:
+            retrieved_texts = " ".join([result.page_content for result in results])
+
+            # Define the Summarize Chain for the question
+            latest_conversation = request.cookies.get("latest_question_response", "")
+            template1 = (
+                f"{question} Answer the question based on the following:\n\"{text}\"\n:" +
+                (f" Answer the Question with only 3 sentences. Latest conversation: {latest_conversation}" if latest_conversation else "")
+            )
+            prompt1 = PromptTemplate.from_template(template1)
+
+            # Initialize the LLMChain with the prompt
+            llm_chain1 = LLMChain(llm=llm, prompt=prompt1)
+
+            # Invoke the chain to get the summary
+            try:
+                response_chain = llm_chain1.invoke({"text": text})
+                summary1 = response_chain["text"]
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error invoking LLMChain: {str(e)}")
+
+            # Generate embeddings for the summary
+            try:
+                summary_embedding = embeddings.embed_query(summary1)
+                document_search = FAISS.from_texts([summary1], embeddings)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error generating embeddings: {str(e)}")
+
+            # Perform a search on the FAISS vector database
+            try:
+                if document_search:
+                    query_embedding = embeddings.embed_query(question)
+                    results = document_search.similarity_search_by_vector(query_embedding, k=1)
+
+                    if results:
+                        current_response = format_text(results[0].page_content)
+                    else:
+                        current_response = "No matching document found in the database."
+                else:
+                    current_response = "Vector database not initialized."
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Error during similarity search: {str(e)}")
+        else:
+            current_response = "No relevant results found."
+
+        # Append the question and response from FAISS search
+        current_question = f"You asked: {question}"
+        question_responses.append((current_question, current_response))
+
+        # Save all results to output_summary.json
+        save_to_json(question_responses)
+
+        return AskResponse(meta={"status": "success", "code": 200}, question=question, result=current_response)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+
+
+
+def save_to_json(question_responses):
+    outputs = {
+        "question_responses": question_responses
+    }
+    with open("output_summary.json", "w") as outfile:
+        json.dump(outputs, outfile)
 
 if __name__ == "__main__":
     import uvicorn
