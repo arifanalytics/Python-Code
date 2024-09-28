@@ -22,3 +22,12 @@ wordcloud
 fpdf
 uvicorn
 python-multipart
+langchain-google-genai
+langchain
+langchain-community
+unstructured
+openpyxl
+faiss-cpu
+tiktoken
+networkx
+python-multipart
