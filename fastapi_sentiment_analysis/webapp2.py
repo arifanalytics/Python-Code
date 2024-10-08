@@ -183,8 +183,9 @@ async def analyze(
         if target_variable not in df.columns:
             return "Selected target variable does not exist in the dataset."
 
+        add_stopwords = ['the', 'of', 'is', 'a', 'in']
         custom_stopword_list = [word.strip() for word in custom_stopwords.split(',')]
-        all_stopwords = data + custom_stopword_list
+        all_stopwords = data + custom_stopword_list + add_stopwords
 
         # Remove hyperlinks, emoticons, numbers, and stopwords
         hyperlink_pattern = r'https?://\S+|www\.\S+'
@@ -329,7 +330,7 @@ async def analyze(
 
         bigram_positive = "static/bigram_positive.png"
         plt.savefig(bigram_positive)
-        plt.show()
+        
 
         img1 = PIL.Image.open(bigram_positive)
         try:
@@ -355,7 +356,7 @@ async def analyze(
 
         bigram_neutral = "static/bigram_neutral.png"
         plt.savefig(bigram_neutral)
-        plt.show()
+        
 
         img2 = PIL.Image.open(bigram_neutral)
         try:
@@ -381,7 +382,7 @@ async def analyze(
 
         bigram_negative = "static/bigram_negative.png"
         plt.savefig(bigram_negative)
-        plt.show()
+        
 
         img3 = PIL.Image.open(bigram_negative)
         try:
@@ -413,7 +414,7 @@ async def analyze(
         # Save the entire plot as a PNG
         plt.savefig(unigram_positive)
         # Show the plot
-        plt.show()
+        
 
         # Use Google Gemini API to generate content based on the bigram image
         img1 = PIL.Image.open(unigram_positive)
@@ -448,7 +449,7 @@ async def analyze(
         # Save the entire plot as a PNG
         plt.savefig(unigram_neutral)
         # Show the plot
-        plt.show()
+        
 
         # Use Google Gemini API to generate content based on the bigram image
         img1 = PIL.Image.open(unigram_neutral)
@@ -484,7 +485,7 @@ async def analyze(
         # Save the entire plot as a PNG
         plt.savefig(unigram_negative)
         # Show the plot
-        plt.show()
+        
 
         # Use Google Gemini API to generate content based on the bigram image
         img1 = PIL.Image.open(unigram_negative)
