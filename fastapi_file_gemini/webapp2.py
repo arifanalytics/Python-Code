@@ -45,10 +45,7 @@ def format_text(text: str) -> str:
 # Define Pydantic models for requests and responses
 class AnalyzeDocumentRequest(BaseModel):
     api_key: str
-    iam: str
-    context: str
-    output: str
-    summary_length: str
+    prompt: str
 
     
 
@@ -75,10 +72,7 @@ class AskResponse(BaseModel):
 @app.post("/", response_model=AnalyzeDocumentResponse)
 async def analyze_document(
     api_key: str = Form(...),
-    iam: str = Form(...),
-    context: str = Form(...),
-    output: str = Form(...),
-    summary_length: str = Form(...),
+    prompt: str = Form(...),
     file: UploadFile = File(...)
 ):
     global uploaded_file_path, document_analyzed, summary, api, llm
@@ -112,7 +106,7 @@ async def analyze_document(
             # Process audio files differently
             audio_file = genai.upload_file(path=uploaded_file_path)
             model = genai.GenerativeModel(model_name="gemini-1.5-flash")
-            prompt = f"I am an {iam}. This file is about {context}. Answer the question based on this file: {output}. Write a {summary_length} concise summary."
+            prompt = f"{prompt}"
             response = model.generate_content([prompt, audio_file], safety_settings=safety_settings)
             summary = format_text(response.text)
             document_analyzed = True
@@ -124,7 +118,7 @@ async def analyze_document(
 
         docs = loader.load()
         prompt_template = PromptTemplate.from_template(
-            f"I am an {iam}. This file is about {context}. Answer the question based on this file: {output}. Write a {summary_length} concise summary of the following text: {{text}}"
+            f"{prompt} text: {{text}}"
         )
         llm_chain = LLMChain(llm=llm, prompt=prompt_template)
         stuff_chain = StuffDocumentsChain(llm_chain=llm_chain, document_variable_name="text")
