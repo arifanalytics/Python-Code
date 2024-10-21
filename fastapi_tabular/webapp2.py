@@ -29,6 +29,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredCSVLoader, UnstructuredExcelLoader, Docx2txtLoader, UnstructuredPowerPointLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
+from fastapi.middleware.cors import CORSMiddleware
 
 
 safety_settings = [
@@ -46,6 +47,14 @@ templates = Jinja2Templates(directory="templates")
 sns.set_theme(color_codes=True)
 uploaded_df = None
 question_responses = []
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as necessary for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Define Pydantic models for requests and responses
 class AnalyzeDocumentRequest(BaseModel):
