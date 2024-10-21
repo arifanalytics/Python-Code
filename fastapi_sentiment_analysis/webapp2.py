@@ -41,7 +41,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredCSVLoader, UnstructuredExcelLoader, Docx2txtLoader, UnstructuredPowerPointLoader
 from langchain_google_genai import ChatGoogleGenerativeAI
-
+from fastapi.middleware.cors import CORSMiddleware
 
 if os.getenv("FASTAPI_ENV") == "development":
     nest_asyncio.apply()
@@ -53,7 +53,13 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as necessary for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class GetColumn(BaseModel):
     meta: dict
