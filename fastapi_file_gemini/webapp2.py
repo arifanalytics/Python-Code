@@ -15,6 +15,7 @@ import google.generativeai as genai
 import re
 import nest_asyncio
 from langchain.text_splitter import CharacterTextSplitter
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -28,6 +29,14 @@ summary = None
 question_responses = []
 api = None
 llm = None
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust as necessary for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 safety_settings = [
     {"category": "HARM_CATEGORY_DANGEROUS", "threshold": "BLOCK_NONE"},
