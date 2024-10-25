@@ -32,7 +32,7 @@ llm = None
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust as necessary for production
+    allow_origins=["https://goarif-frontend-mvp-490966028080.asia-southeast2.run.app"],  # Adjust as necessary for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
