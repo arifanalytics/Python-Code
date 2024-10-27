@@ -9,7 +9,7 @@ steps:
     'deploy',
     'goarif-file2', # This is your Cloud Run service name
     '--image', 'gcr.io/$PROJECT_ID/goarif-file2',
-    '--region', 'asia-southeast2', # Jakarta, Indonesia region
+    '--region', 'asia-southeast2', # Jakarta region
     '--platform', 'managed',
     '--allow-unauthenticated' # Consider adding authentication if needed
   ]
