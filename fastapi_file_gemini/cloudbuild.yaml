@@ -5,7 +5,7 @@ steps:
   args: ['push', 'gcr.io/$PROJECT_ID/goarif-file2']
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
-    'run',
+    'run:|pip install -r requirements.txt',
     'deploy',
     'goarif-file2', # This is your Cloud Run service name
     '--image', 'gcr.io/$PROJECT_ID/goarif-file2',
